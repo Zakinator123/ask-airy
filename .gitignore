@@ -1,0 +1,7 @@
+/node_modules
+/.block
+/build
+/.idea
+.tmp/index.js
+.DS_Store
+test/coverage/lcov*
