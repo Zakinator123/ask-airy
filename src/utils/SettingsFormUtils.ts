@@ -5,7 +5,7 @@ import {
     ValidationResult
 } from "../types/ConfigurationTypes";
 import {mapValues} from "./RandomUtils";
-import {blankErrorState, settingsFormSchema} from "./Constants";
+import {blankErrorState} from "./Constants";
 import {SelectOptionValue} from "@airtable/blocks/dist/types/src/ui/select_and_select_buttons_helpers";
 import {Field, FieldType, Table} from "@airtable/blocks/models";
 import {TableId} from "@airtable/blocks/types";

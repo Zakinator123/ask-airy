@@ -1,6 +1,6 @@
 import {
-    CheckoutTableOptionalFieldName,
-    CheckoutTableRequiredFieldName, TableAndFieldsConfigurationKey,
+    OptionalFieldName,
+    RequiredFieldName, TableAndFieldsConfigurationKey,
     TablesAndFieldsConfigurationErrors,
     TablesAndFieldsConfigurationIds,
     TableName,
@@ -21,10 +21,10 @@ type TablesOrFieldsOrErrors<TablesNamesOrFieldNames extends TableAndFieldsConfig
     { errorsPresent: true, errors: Record<TablesNamesOrFieldNames, string> }
     | { errorsPresent: false, tablesOrFields: Record<TablesNamesOrFieldNames, TableOrField> }
 type TablesOrErrors = TablesOrFieldsOrErrors<TableName, Table>;
-type RequiredFieldsOrErrors = TablesOrFieldsOrErrors<CheckoutTableRequiredFieldName, Field>
-type OptionalFieldsOrErrors = TablesOrFieldsOrErrors<CheckoutTableOptionalFieldName, Field | undefined>
+type RequiredFieldsOrErrors = TablesOrFieldsOrErrors<RequiredFieldName, Field>
+type OptionalFieldsOrErrors = TablesOrFieldsOrErrors<OptionalFieldName, Field | undefined>
 const tablesDefined = (possiblyUndefinedTables: Record<TableName, Table | undefined>): possiblyUndefinedTables is Record<TableName, Table> => !Object.values(possiblyUndefinedTables).includes(undefined);
-const fieldsDefined = (possiblyUndefinedFields: Record<CheckoutTableRequiredFieldName, Field | undefined>): possiblyUndefinedFields is Record<CheckoutTableRequiredFieldName, Field> => !Object.values(possiblyUndefinedFields).includes(undefined);
+const fieldsDefined = (possiblyUndefinedFields: Record<RequiredFieldName, Field | undefined>): possiblyUndefinedFields is Record<RequiredFieldName, Field> => !Object.values(possiblyUndefinedFields).includes(undefined);
 
 const getTables = (base: Base, tableConfigurationIds: Record<TableName, TableId>): TablesOrErrors => {
     const tables = mapValues(TableName, (tableName,) =>
@@ -36,8 +36,8 @@ const getTables = (base: Base, tableConfigurationIds: Record<TableName, TableId>
     };
 }
 
-const getRequiredFields = (base: Base, table: Table, fieldConfigurationIds: Record<CheckoutTableRequiredFieldName, FieldId>): RequiredFieldsOrErrors => {
-    const requiredFields = mapValues(CheckoutTableRequiredFieldName, (requiredFieldName,) =>
+const getRequiredFields = (base: Base, table: Table, fieldConfigurationIds: Record<RequiredFieldName, FieldId>): RequiredFieldsOrErrors => {
+    const requiredFields = mapValues(RequiredFieldName, (requiredFieldName,) =>
         table.getFieldByIdIfExists(fieldConfigurationIds[requiredFieldName]) ?? undefined);
 
     return fieldsDefined(requiredFields) ? {errorsPresent: false, tablesOrFields: requiredFields} : {
@@ -46,10 +46,10 @@ const getRequiredFields = (base: Base, table: Table, fieldConfigurationIds: Reco
     };
 }
 
-const getOptionalFields = (base: Base, table: Table, fieldConfigurationIds: Record<CheckoutTableOptionalFieldName, FieldId>): OptionalFieldsOrErrors => {
+const getOptionalFields = (base: Base, table: Table, fieldConfigurationIds: Record<OptionalFieldName, FieldId>): OptionalFieldsOrErrors => {
 
     let nonEmptyFieldIdResolvedAsUndefined = false;
-    const optionalFields = mapValues(CheckoutTableOptionalFieldName, (optionalFieldName,) => {
+    const optionalFields = mapValues(OptionalFieldName, (optionalFieldName,) => {
         const configuredFieldId = fieldConfigurationIds[optionalFieldName];
         if (configuredFieldId === '') return undefined;
         const fieldOrUndefined = table.getFieldByIdIfExists(configuredFieldId) ?? undefined;
@@ -65,8 +65,8 @@ const getOptionalFields = (base: Base, table: Table, fieldConfigurationIds: Reco
 }
 
 const validateFieldTypesAndLinks = (fieldsAndTables: ValidatedTablesAndFieldsConfiguration): { errorsPresent: true, errors: TablesAndFieldsConfigurationErrors } | { errorsPresent: false } => {
-    function isField(key: string): key is CheckoutTableRequiredFieldName | CheckoutTableOptionalFieldName {
-        return key in CheckoutTableRequiredFieldName || key in CheckoutTableOptionalFieldName;
+    function isField(key: string): key is RequiredFieldName | OptionalFieldName {
+        return key in RequiredFieldName || key in OptionalFieldName;
     }
 
     let errorOccurred = false;
@@ -116,40 +116,40 @@ const checkIfRequiredIdsPresentAndAllIdsAreUnique: (configurationIds: TablesAndF
     return errorsPresent ? {errorsPresent, errors: potentialErrorSet} : {errorsPresent: false};
 }
 
+// @ts-ignore
 const validateExtensionConfiguration: (configurationIds: TablesAndFieldsConfigurationIds, base: Base) => ValidationResult = (configurationIds, base) => {
-    // Check if required fields/tables are present and unique
-    const uniqueAndRequiredIdsValidation = checkIfRequiredIdsPresentAndAllIdsAreUnique(configurationIds);
-    if (uniqueAndRequiredIdsValidation.errorsPresent) return uniqueAndRequiredIdsValidation;
-
-    // Check if tables exist
-    const tablesOrErrors: TablesOrErrors = getTables(base, configurationIds);
-    if (tablesOrErrors.errorsPresent) {
-        const errors = {...blankErrorState, ...tablesOrErrors.errors};
-        return {errorsPresent: true, errors};
-    }
-
-    // Check if required fields and optional fields (if specified) exist
-    const checkoutsTableRequiredFieldsOrErrors: RequiredFieldsOrErrors = getRequiredFields(base, tablesOrErrors.tablesOrFields.checkoutsTable, configurationIds);
-    const checkoutsTableOptionalFieldsOrErrors: OptionalFieldsOrErrors = getOptionalFields(base, tablesOrErrors.tablesOrFields.checkoutsTable, configurationIds);
-    if (checkoutsTableRequiredFieldsOrErrors.errorsPresent || checkoutsTableOptionalFieldsOrErrors.errorsPresent) {
-        let errors = blankErrorState;
-        errors = checkoutsTableRequiredFieldsOrErrors.errorsPresent ? {...errors, ...checkoutsTableRequiredFieldsOrErrors.errors} : errors;
-        errors = checkoutsTableOptionalFieldsOrErrors.errorsPresent ? {...errors, ...checkoutsTableOptionalFieldsOrErrors.errors} : errors;
-        return {errorsPresent: true, errors}
-    }
-
-    const resolvedFieldsAndTables: ValidatedTablesAndFieldsConfiguration = {
-        ...tablesOrErrors.tablesOrFields,
-        ...checkoutsTableRequiredFieldsOrErrors.tablesOrFields,
-        ...checkoutsTableOptionalFieldsOrErrors.tablesOrFields
-    };
-
-    // Check if field types are correct and if fields are linked record fields, then check if fields link to correct tables
-    const fieldTypesAndLinksValidation = validateFieldTypesAndLinks(resolvedFieldsAndTables);
-    if (fieldTypesAndLinksValidation.errorsPresent) return fieldTypesAndLinksValidation;
-
-    return {errorsPresent: false, configuration: resolvedFieldsAndTables};
+    // // Check if required fields/tables are present and unique
+    // const uniqueAndRequiredIdsValidation = checkIfRequiredIdsPresentAndAllIdsAreUnique(configurationIds);
+    // if (uniqueAndRequiredIdsValidation.errorsPresent) return uniqueAndRequiredIdsValidation;
+    //
+    // // Check if tables exist
+    // const tablesOrErrors: TablesOrErrors = getTables(base, configurationIds);
+    // if (tablesOrErrors.errorsPresent) {
+    //     const errors = {...blankErrorState, ...tablesOrErrors.errors};
+    //     return {errorsPresent: true, errors};
+    // }
+    //
+    // // Check if required fields and optional fields (if specified) exist
+    // const requiredFieldsOrErrors: RequiredFieldsOrErrors = getRequiredFields(base, tablesOrErrors.tablesOrFields.table, configurationIds);
+    // const checkoutsTableOptionalFieldsOrErrors: OptionalFieldsOrErrors = getOptionalFields(base, tablesOrErrors.tablesOrFields.table, configurationIds);
+    // if (requiredFieldsOrErrors.errorsPresent || checkoutsTableOptionalFieldsOrErrors.errorsPresent) {
+    //     let errors = blankErrorState;
+    //     errors = requiredFieldsOrErrors.errorsPresent ? {...errors, ...requiredFieldsOrErrors.errors} : errors;
+    //     errors = checkoutsTableOptionalFieldsOrErrors.errorsPresent ? {...errors, ...checkoutsTableOptionalFieldsOrErrors.errors} : errors;
+    //     return {errorsPresent: true, errors}
+    // }
+    //
+    // const resolvedFieldsAndTables: ValidatedTablesAndFieldsConfiguration = {
+    //     ...tablesOrErrors.tablesOrFields,
+    //     ...requiredFieldsOrErrors.tablesOrFields,
+    //     ...checkoutsTableOptionalFieldsOrErrors.tablesOrFields
+    // };
+    //
+    // // Check if field types are correct and if fields are linked record fields, then check if fields link to correct tables
+    // const fieldTypesAndLinksValidation = validateFieldTypesAndLinks(resolvedFieldsAndTables);
+    // if (fieldTypesAndLinksValidation.errorsPresent) return fieldTypesAndLinksValidation;
+    //
+    // return {errorsPresent: false, configuration: resolvedFieldsAndTables};
 }
-
 
 export const getConfigurationValidatorForBase: (base: Base) => (configIds: TablesAndFieldsConfigurationIds) => ValidationResult = (base) => (extensionConfigurationIds: TablesAndFieldsConfigurationIds) => validateExtensionConfiguration(extensionConfigurationIds, base)

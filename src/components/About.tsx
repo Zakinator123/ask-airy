@@ -31,14 +31,14 @@ export const About = () => {
         <Text as='h3' fontWeight={600} size='xlarge'>About:</Text>
         <Box padding='0.7rem'>
             <Text>
-
+                About text here.
             </Text>
         </Box>
         <br/>
 
         <Text as='h3' fontWeight={600} size='xlarge'>How this extension works:</Text>
         <br/>
-
+        <Text>Explanation Text here.</Text>
         <br/>
         <Text as='h3' fontWeight={600} size='xlarge'>Support:</Text>
         <Box padding='0.7rem'>
@@ -48,17 +48,14 @@ export const About = () => {
             <br/>
             <br/>
             <Text>
-                If you would like to support the development of this extension, please consider purchasing a
-                <Link target='_blank' href='https://www.zoftware-solutions.com/l/checkoutcart'>
-                    &nbsp;premium license
-                </Link>.
+                If you would like to support the development of this extension, please consider purchasing a premium
+                license.
             </Text>
         </Box>
         <br/>
         <Text fontWeight={600} size='xlarge'>Source Code:</Text>
         <Text padding='0.7rem'>
-            This extension is open source and can be viewed on
-            <Link target='_blank' href='https://github.com/Zakinator123/intellisearch'>&nbsp;Github</Link>
+            This extension is open source and can be viewed on Github.
             <br/>
             Version 1.0.0
         </Text>

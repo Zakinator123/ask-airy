@@ -5,8 +5,8 @@ import {basicTestFixture} from '../basic-test-fixture';
 import {getConfigurationValidatorForBase} from "../../src/services/ConfigurationValidatorService";
 import {blankConfigurationState, combinedConfigKeys, combinedRequiredConfigKeys} from "../../src/utils/Constants";
 import {
-    CheckoutTableOptionalFieldName,
-    CheckoutTableRequiredFieldName,
+    OptionalFieldName,
+    RequiredFieldName,
     TablesAndFieldsConfigurationIds,
     TableName
 } from "../../src/types/ConfigurationTypes";
@@ -22,7 +22,7 @@ describe('ConfigurationValidatorService', () => {
         expect(validationResult.errorsPresent).toBeTruthy();
         if (validationResult.errorsPresent) {
             Object.values(combinedRequiredConfigKeys).forEach(configKey => expect(validationResult.errors[configKey]).toBe('This value is required.'));
-            Object.values(CheckoutTableOptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
+            Object.values(OptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
         } else throw new Error('Validation Errors missing');
     });
 
@@ -36,7 +36,7 @@ describe('ConfigurationValidatorService', () => {
                 const expectedErrorString = configKey === TableName.recipientTable ? '' : 'This value is required.';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
             });
-            Object.values(CheckoutTableOptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
+            Object.values(OptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
         } else throw new Error('Validation Errors missing');
     });
 
@@ -51,7 +51,7 @@ describe('ConfigurationValidatorService', () => {
                 const expectedErrorString = configKey === TableName.recipientTable || configKey === TableName.inventoryTable ? 'Configuration values must be unique.' : 'This value is required.';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
             });
-            Object.values(CheckoutTableOptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
+            Object.values(OptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
         } else throw new Error('Validation Errors missing');
     });
 
@@ -97,7 +97,7 @@ describe('ConfigurationValidatorService', () => {
         expect(validationResult.errorsPresent).toBeTruthy();
         if (validationResult.errorsPresent) {
             Object.values(combinedConfigKeys).forEach(configKey => {
-                const expectedErrorString = configKey === CheckoutTableRequiredFieldName.linkedRecipientTableField ? 'Field no longer exists' : '';
+                const expectedErrorString = configKey === RequiredFieldName.linkedRecipientTableField ? 'Field no longer exists' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
             });
         } else throw new Error('Validation Errors missing');
@@ -121,7 +121,7 @@ describe('ConfigurationValidatorService', () => {
         expect(validationResult.errorsPresent).toBeTruthy();
         if (validationResult.errorsPresent) {
             Object.values(combinedConfigKeys).forEach(configKey => {
-                const expectedErrorString = configKey === CheckoutTableOptionalFieldName.dateDueField ? 'Previously enabled optional field no longer exists.' : '';
+                const expectedErrorString = configKey === OptionalFieldName.dateDueField ? 'Previously enabled optional field no longer exists.' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
             });
         } else throw new Error('Validation Errors missing');
@@ -145,7 +145,7 @@ describe('ConfigurationValidatorService', () => {
         expect(validationResult.errorsPresent).toBeTruthy();
         if (validationResult.errorsPresent) {
             Object.values(combinedConfigKeys).forEach(configKey => {
-                const expectedErrorString = configKey === CheckoutTableRequiredFieldName.checkedInField ? 'Field must be of type checkbox' : '';
+                const expectedErrorString = configKey === RequiredFieldName.checkedInField ? 'Field must be of type checkbox' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
             });
         } else throw new Error('Validation Errors missing');
@@ -170,9 +170,9 @@ describe('ConfigurationValidatorService', () => {
         if (validationResult.errorsPresent) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 let expectedErrorString: string;
-                if (configKey === CheckoutTableRequiredFieldName.linkedRecipientTableField) {
+                if (configKey === RequiredFieldName.linkedRecipientTableField) {
                     expectedErrorString = "Field must link to the 'Test Recipients' table";
-                } else if (configKey === CheckoutTableRequiredFieldName.linkedInventoryTableField) {
+                } else if (configKey === RequiredFieldName.linkedInventoryTableField) {
                     expectedErrorString = "Field must link to the 'Test Inventory' table";
                 } else expectedErrorString = '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
