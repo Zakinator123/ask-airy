@@ -26,3 +26,4 @@ export type ValidatedTablesAndFieldsConfiguration = Readonly<TablesAndFieldsConf
 
 export type ValidationResult = { errorsPresent: true, errors: TablesAndFieldsConfigurationErrors }
     | { errorsPresent: false, configuration: ValidatedTablesAndFieldsConfiguration }
+

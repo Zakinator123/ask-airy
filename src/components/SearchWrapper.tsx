@@ -1,8 +1,11 @@
 import {ExtensionConfiguration, TablesAndFieldsConfigurationIds, ValidationResult} from "../types/ConfigurationTypes";
 import React from "react";
-import {TransactionService} from "../services/TransactionService";
 import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
+import {Search} from "./Search";
+import {RateLimiter} from "../utils/RateLimiter";
+import {SemanticSearchService} from "../services/SemanticSearchService";
+import {OpenAIEmbeddingService} from "../services/EmbeddingService";
 
 loadCSSFromString(`
 .centered-container {
@@ -12,36 +15,42 @@ loadCSSFromString(`
     flex-direction: column;
     justify-content: center;
     padding: 2rem;
-    
+    gap: 1rem;
 }
 
 @media (min-width: 515px) {
     .centered-container {
         padding: 5rem;
+        gap: 1rem;
     }
 }
 `);
 
 const SearchWrapper = ({
-                                     airtableMutationService,
-                                     extensionConfiguration,
-                                     configurationValidator,
-                                     isPremiumUser,
-                                     transactionIsProcessing,
-                                     setTransactionIsProcessing
-                                 }:
-                                     {
-                                         airtableMutationService: AirtableMutationService,
-                                         extensionConfiguration: ExtensionConfiguration | undefined,
-                                         configurationValidator: (configIds: TablesAndFieldsConfigurationIds) => ValidationResult,
-                                         isPremiumUser: boolean,
-                                         transactionIsProcessing: boolean,
-                                         setTransactionIsProcessing: (processing: boolean) => void
-                                     }) => {
+                           airtableMutationService,
+                           extensionConfiguration,
+                           configurationValidator,
+                           isPremiumUser,
+                           transactionIsProcessing,
+                           setTransactionIsProcessing
+                       }:
+                           {
+                               airtableMutationService: AirtableMutationService,
+                               extensionConfiguration: ExtensionConfiguration | undefined,
+                               configurationValidator: (configIds: TablesAndFieldsConfigurationIds) => ValidationResult,
+                               isPremiumUser: boolean,
+                               transactionIsProcessing: boolean,
+                               setTransactionIsProcessing: (processing: boolean) => void
+                           }) => {
 
     if (extensionConfiguration === undefined) {
         return <Box className='centered-container'>
-            <Text size="large">You must configure the extension in the settings tab before you can use it!</Text>
+            <Search
+                semanticSearchService={
+                new SemanticSearchService(
+                    new OpenAIEmbeddingService('test'),
+                    new AirtableMutationService(new RateLimiter(10, 5)))}/>
+            {/*<Text size="large">You must configure the extension in the settings tab before you can use it!</Text>*/}
         </Box>;
     }
 

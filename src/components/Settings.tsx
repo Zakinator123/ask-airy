@@ -1,28 +1,32 @@
 import React, {useEffect, useState} from "react";
-import {Box, Button, loadCSSFromString, Loader, Text} from "@airtable/blocks/ui";
+import {
+    Box,
+    Button,
+    FormField,
+    Input,
+    loadCSSFromString,
+    Loader,
+    Select,
+    SelectButtons,
+    Text
+} from "@airtable/blocks/ui";
 import {Base} from "@airtable/blocks/models";
 import {blankConfigurationState, blankErrorState, defaultOtherConfigurationState} from "../utils/Constants";
 import {
     ExtensionConfiguration,
     OtherExtensionConfiguration,
-    TableAndFieldsConfigurationKey,
     TablesAndFieldsConfigurationErrors,
     TablesAndFieldsConfigurationIds,
     ValidationResult
 } from "../types/ConfigurationTypes";
-import {SelectOptionValue} from "@airtable/blocks/dist/types/src/ui/select_and_select_buttons_helpers";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import {
-    getNewFormErrorStateForSelectorChange,
-    getNewFormStateForSelectorChange,
-    getUpdatedFormErrorStateIfStaleErrorsExist,
-    validateFormAndGetFormValidationErrors
-} from "../utils/SettingsFormUtils";
+import {validateFormAndGetFormValidationErrors} from "../utils/SettingsFormUtils";
 import {asyncAirtableOperationWrapper, changeLoadingToastToErrorToast} from "../utils/RandomUtils";
 import {OfflineToastMessage} from "./OfflineToastMessage";
 import {Toast} from "./Toast";
 import {ExtensionConfigurationUpdateResult} from "../types/OtherTypes";
+import {FieldId, TableId} from "@airtable/blocks/types";
 
 loadCSSFromString(`
 .settings-container {
@@ -34,7 +38,8 @@ loadCSSFromString(`
     padding: 1rem;
     overflow: auto;
     height: 100%;
-    max-width: 800px;
+    max-width: 400px;
+    width: 100%;
 }
 
 .intro-settings-text {
@@ -120,40 +125,91 @@ export const Settings = ({
                              }) => {
     useEffect(() => () => toast.dismiss(), []);
 
+    type AiProvidersConfiguration = Record<AIProviderName, {
+        apiKey: string,
+        embeddingModel: string,
+        completionsSettings: {},
+    }>
+
+    type AIProviderName = string;
+
+
+    type ExtensionConfiguration = {
+        apiKey: string,
+        currentAiProvider: AIProviderName,
+        aiProvidersConfiguration: AiProvidersConfiguration
+        searchTables: SearchTableConfig[],
+    }
+
+
+    type SearchTableConfig = {
+        tableId: TableId,
+        searchFieldIds: FieldId[],
+        intelliSearchIndexFieldId: FieldId,
+    }
+
     const [tablesAndFieldsFormState, setTablesAndFieldsFormState] = useState(currentTableAndFieldIds === undefined ? blankConfigurationState : currentTableAndFieldIds);
     const [tablesAndFieldsFormErrorState, setFormErrorState] = useState(currentTableAndFieldIds === undefined ? blankErrorState : () => validateFormAndGetFormValidationErrors(currentTableAndFieldIds, validateTablesAndFields));
     const [otherConfigurationFormState, setOtherConfigurationFormState] = useState(currentOtherConfiguration === undefined ? defaultOtherConfigurationState : currentOtherConfiguration);
 
+    const [aiProviderName, setAiProviderName] = useState('openai')
+    const [aiProviderApiKey, setAiProviderApiKey] = useState('')
+
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
+    //
+    // const result = getUpdatedFormErrorStateIfStaleErrorsExist(tablesAndFieldsFormErrorState, validateTablesAndFields, tablesAndFieldsFormState)
+    // if (result.staleErrorsExist) setFormErrorState(result.newFormErrorState);
+    //
+    // const selectorChangeHandler = (fieldOrTableName: TableAndFieldsConfigurationKey, selectedOption: SelectOptionValue) => {
+    //     let newFormState = getNewFormStateForSelectorChange(tablesAndFieldsFormState, fieldOrTableName, selectedOption);
+    //     setTablesAndFieldsFormState(newFormState)
+    //     const newFormValidationErrors = validateFormAndGetFormValidationErrors(newFormState, validateTablesAndFields);
+    //     const newFormErrorState = getNewFormErrorStateForSelectorChange(tablesAndFieldsFormErrorState, newFormValidationErrors, fieldOrTableName);
+    //     setFormErrorState(newFormErrorState)
+    // }
 
-    const result = getUpdatedFormErrorStateIfStaleErrorsExist(tablesAndFieldsFormErrorState, validateTablesAndFields, tablesAndFieldsFormState)
-    if (result.staleErrorsExist) setFormErrorState(result.newFormErrorState);
+    const aiProviderOptions = [
+        {value: "openai", label: "OpenAI"},
+    ];
 
-    const selectorChangeHandler = (fieldOrTableName: TableAndFieldsConfigurationKey, selectedOption: SelectOptionValue) => {
-        let newFormState = getNewFormStateForSelectorChange(tablesAndFieldsFormState, fieldOrTableName, selectedOption);
-        setTablesAndFieldsFormState(newFormState)
-        const newFormValidationErrors = validateFormAndGetFormValidationErrors(newFormState, validateTablesAndFields);
-        const newFormErrorState = getNewFormErrorStateForSelectorChange(tablesAndFieldsFormErrorState, newFormValidationErrors, fieldOrTableName);
-        setFormErrorState(newFormErrorState)
-    }
     return <>
         <Box className='settings-container'>
-            <Box display='flex' justifyContent='center'>
-                <Button disabled={configurationUpdatePending} variant='primary'
-                        onClick={() => attemptConfigUpdateAndShowToast({
-                                tableAndFieldIds: tablesAndFieldsFormState,
-                                otherConfiguration: otherConfigurationFormState
-                            }, manualConfigurationToastId,
-                            setConfigurationUpdatePending,
-                            setFormErrorState,
-                            validateConfigUpdateAndSaveToGlobalConfig
-                        )}>
-                    {configurationUpdatePending
-                        ? <Loader scale={0.2} fillColor='white'/>
-                        : <Text textColor='white'>Save Configuration</Text>
-                    }
-                </Button>
-            </Box>
+            <FormField label="AI Provider">
+                <SelectButtons
+                    value={'openai'}
+                    onChange={newValue => setAiProviderName(newValue as string)}
+                    options={aiProviderOptions}
+                />
+            </FormField>
+            <FormField label="AI Provider API Key">
+                <Input
+                    placeholder='Enter your OpenAI API key.'
+                    type='text'
+                    value={aiProviderApiKey}
+                    onChange={e => setAiProviderApiKey(e.target.value)}
+                />
+            </FormField>
+            <FormField label="Embedding Model">
+                <Select
+                    options={[{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]}
+                    value={'text-embedding-ada-002'}
+                    disabled={true}
+                />
+            </FormField>
+            <Button disabled={configurationUpdatePending} variant='primary'
+                    onClick={() => attemptConfigUpdateAndShowToast({
+                            tableAndFieldIds: tablesAndFieldsFormState,
+                            otherConfiguration: otherConfigurationFormState
+                        }, manualConfigurationToastId,
+                        setConfigurationUpdatePending,
+                        setFormErrorState,
+                        validateConfigUpdateAndSaveToGlobalConfig
+                    )}>
+                {configurationUpdatePending
+                    ? <Loader scale={0.2} fillColor='white'/>
+                    : <Text textColor='white'>Save Configuration</Text>
+                }
+            </Button>
             <Toast {...manualConfigurationToastId} styles={{marginTop: '0'}}/>
         </Box>
     </>

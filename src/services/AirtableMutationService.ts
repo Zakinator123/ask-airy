@@ -3,7 +3,7 @@ import {Table} from "@airtable/blocks/models";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
 import {ObjectMap} from "@airtable/blocks/dist/types/src/private_utils";
 import {FieldId} from "@airtable/blocks/dist/types/src/types/field";
-import {RecordToUpdate} from "../types/TransactionTypes";
+import {RecordToUpdate} from "../types/OtherTypes";
 
 export class AirtableMutationService {
     private readonly _rateLimiter: RateLimiter;

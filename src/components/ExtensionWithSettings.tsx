@@ -139,7 +139,7 @@ export function ExtensionWithSettings({
     const premiumLicenseDefined: boolean = premiumLicense !== undefined;
     const [premiumStatus, setPremiumStatus] = useState<PremiumStatus>(premiumLicenseDefined ? 'premium' : 'free');
 
-    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 3 : 0);
+    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 0 : 0);
 
     const updatePending = configurationUpdatePending || transactionIsProcessing || premiumUpdatePending;
     const configurationValidator = getConfigurationValidatorForBase(base);
