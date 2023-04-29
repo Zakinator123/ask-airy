@@ -1,4 +1,3 @@
-import {TablesAndFieldsConfigurationErrors} from "./ConfigurationTypes";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
 import {ObjectMap} from "@airtable/blocks/dist/types/src/private_utils";
 import {FieldId} from "@airtable/blocks/types";
@@ -6,7 +5,6 @@ import {FieldId} from "@airtable/blocks/types";
 export type ExtensionConfigurationUpdateResult = {
     errorsOccurred: true,
     errorMessage: string,
-    tablesAndFieldsConfigurationErrors: TablesAndFieldsConfigurationErrors
 } | { errorsOccurred: false }
 
 export type PremiumStatus = 'premium' | 'invalid' | 'expired' | 'unable-to-verify' | 'free';

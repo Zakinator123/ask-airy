@@ -13,7 +13,7 @@ import {TableId} from "@airtable/blocks/types";
 export const validateFormAndGetFormValidationErrors = (formState: TablesAndFieldsConfigurationIds,
                                                        configurationValidator: (configurationData: TablesAndFieldsConfigurationIds) => ValidationResult) => {
     const validationResult = configurationValidator(formState);
-    return validationResult.errorsPresent ? validationResult.errors : blankErrorState;
+    return validationResult.errorsOccurred ? validationResult.errors : blankErrorState;
 }
 
 export const getNewFormErrorStateForSelectorChange = (currentFormErrorState: Readonly<TablesAndFieldsConfigurationErrors>,
@@ -38,7 +38,7 @@ export const getUpdatedFormErrorStateIfStaleErrorsExist = (currentFormErrorState
     // This is to handle the case where the user has corrected the error in the form and the error is no longer present in the validationResult.
     if (formErrorStateHasErrors(currentFormErrorState)) {
         const validationResult = validateTablesAndFields(tablesAndFieldsFormState);
-        if (validationResult.errorsPresent) {
+        if (validationResult.errorsOccurred) {
             let staleErrorsExist: boolean = false;
             const newFormErrorState = mapValues(currentFormErrorState, (key, currentFormErrorValue) => {
                 if (validationResult.errors[key] === '' && currentFormErrorValue !== '') {

@@ -166,7 +166,7 @@ export function ExtensionWithSettings({
         </Text>
 
     const TabIcon = ({iconName}: { iconName: IconName }) =>
-        <Icon fillColor={updatePending ? 'lightgray' : 'black'} name={iconName} size={12}/>
+        <Icon position='relative' top='1px' fillColor={updatePending ? 'lightgray' : 'black'} name={iconName} size={12}/>
 
 
     return <Box className='container'>

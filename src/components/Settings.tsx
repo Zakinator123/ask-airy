@@ -1,23 +1,22 @@
 import React, {useEffect, useState} from "react";
 import {
     Box,
+    Button,
     FieldIcon,
     FormField,
     Heading,
     Input,
     loadCSSFromString,
+    Loader,
     Select,
     SelectButtons,
     Text
 } from "@airtable/blocks/ui";
-import {Base, Field, Table} from "@airtable/blocks/models";
-import {blankErrorState} from "../utils/Constants";
+import {Base} from "@airtable/blocks/models";
 import {
-    ExtensionConfiguration,
-    OtherExtensionConfiguration,
-    TablesAndFieldsConfigurationErrors,
-    TablesAndFieldsConfigurationIds,
-    ValidationResult
+    AIProviderName,
+    AIProviderOptions,
+    NewExtensionConfiguration,
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
@@ -32,14 +31,13 @@ loadCSSFromString(`
 .settings-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
     background-color: white;
     padding: 1rem;
     overflow: auto;
     height: 100%;
-    max-width: 400px;
     width: 100%;
+    max-width: fit-content;
 }
 
 .intro-settings-text {
@@ -73,58 +71,6 @@ loadCSSFromString(`
 }
 `)
 
-const attemptConfigUpdateAndShowToast = (
-    extensionConfiguration: ExtensionConfiguration,
-    toastContainerId: { containerId: Id },
-    setConfigurationUpdatePending: (pending: boolean) => void,
-    setFormErrorState: (formErrorState: TablesAndFieldsConfigurationErrors) => void,
-    validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>
-) => {
-    setConfigurationUpdatePending(true);
-
-    const configurationUpdateToastId = toast.loading('Attempting to save configuration..', toastContainerId);
-    asyncAirtableOperationWrapper(() => validateConfigUpdateAndSaveToGlobalConfig(extensionConfiguration),
-        () => toast.loading(<OfflineToastMessage/>, {autoClose: false, containerId: toastContainerId.containerId}))
-        .then((configurationUpdateResult) => {
-            if (configurationUpdateResult.errorsOccurred) {
-                changeLoadingToastToErrorToast(configurationUpdateResult.errorMessage, configurationUpdateToastId, toastContainerId);
-                setFormErrorState(configurationUpdateResult.tablesAndFieldsConfigurationErrors);
-            } else {
-                toast.update(configurationUpdateToastId, {
-                    render: 'Configuration saved successfully!',
-                    type: 'success',
-                    isLoading: false,
-                    containerId: toastContainerId.containerId,
-                    closeButton: true,
-                    autoClose: 4000,
-                });
-                setFormErrorState(blankErrorState);
-            }
-        })
-        .catch(() => changeLoadingToastToErrorToast('An unexpected error occurred', configurationUpdateToastId, toastContainerId))
-        .finally(() => setConfigurationUpdatePending(false));
-};
-
-type AiProvidersConfiguration = Record<AIProviderName, {
-    apiKey: string,
-    embeddingModel: string,
-    otherSettings: {},
-}>
-
-type AIProviderName = string;
-
-
-type NewExtensionConfiguration = {
-    currentAiProvider: AIProviderName,
-    aiProvidersConfiguration: AiProvidersConfiguration
-    searchTables: SearchTableConfig[],
-}
-
-export type SearchTableConfig = {
-    table: Table,
-    searchFields: Field[],
-}
-
 const defaultConfig: NewExtensionConfiguration = {
     currentAiProvider: 'openai',
     aiProvidersConfiguration: {
@@ -141,10 +87,6 @@ const defaultConfig: NewExtensionConfiguration = {
     },
     searchTables: [],
 }
-type AIProviderOptions = {
-    prettyName: string,
-    embeddingModelSelectOptions: { value: string, label: string }[],
-}
 
 const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
     openai: {
@@ -159,6 +101,37 @@ const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
         }, {value: 'multilingual-22-12', label: 'multilingual-22-12'}]
     },
 }
+
+const attemptConfigUpdateAndShowToast = (
+    extensionConfiguration: NewExtensionConfiguration,
+    toastContainerId: { containerId: Id },
+    setConfigurationUpdatePending: (pending: boolean) => void,
+    validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: NewExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>
+) => {
+    setConfigurationUpdatePending(true);
+
+    const configurationUpdateToastId = toast.loading('Attempting to save configuration..', toastContainerId);
+    asyncAirtableOperationWrapper(() => validateConfigUpdateAndSaveToGlobalConfig(extensionConfiguration),
+        () => toast.loading(<OfflineToastMessage/>, {autoClose: false, containerId: toastContainerId.containerId}))
+        .then((configurationUpdateResult) => {
+            if (configurationUpdateResult.errorsOccurred) {
+                changeLoadingToastToErrorToast(configurationUpdateResult.errorMessage, configurationUpdateToastId, toastContainerId);
+                // setFormErrorState(configurationUpdateResult.tablesAndFieldsConfigurationErrors);
+            } else {
+                toast.update(configurationUpdateToastId, {
+                    render: 'Configuration saved successfully!',
+                    type: 'success',
+                    isLoading: false,
+                    containerId: toastContainerId.containerId,
+                    closeButton: true,
+                    autoClose: 4000,
+                });
+                // setFormErrorState(blankErrorState);
+            }
+        })
+        .catch(() => changeLoadingToastToErrorToast('An unexpected error occurred', configurationUpdateToastId, toastContainerId))
+        .finally(() => setConfigurationUpdatePending(false));
+};
 
 export const Settings = ({
                              currentTableAndFieldIds,
@@ -187,80 +160,125 @@ export const Settings = ({
     const [aiProviderName, setAiProviderName] = useState(newExtensionConfiguration ? newExtensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
 
-    console.log(searchTables);
+    const newExtensionConfigurationToSave: NewExtensionConfiguration = {
+        currentAiProvider: aiProviderName,
+        aiProvidersConfiguration: aiProvidersConfiguration,
+        searchTables: searchTables,
+    }
 
+    // Clear out tables/fields that don't exist anymore
+    let schemaChanged = false;
+    searchTables.forEach((searchTable, searchTablesIndex) => {
+        if (searchTable.table.isDeleted) {
+            setSearchTables(prevSearchTables => {
+                prevSearchTables.splice(searchTablesIndex, 1);
+            });
+            schemaChanged = true;
+        } else {
+            searchTable.searchFields.forEach((searchField, searchFieldsIndex) => {
+                if (searchField.isDeleted) {
+                    setSearchTables(prevSearchTables => {
+                        prevSearchTables[searchTablesIndex]!.searchFields.splice(searchFieldsIndex, 1);
+                    });
+                    schemaChanged = true;
+                }
+            })
+        }
+    })
 
-    const getFieldNamesForSearchTableConfig = (searchTableConfig: SearchTableConfig) => {
-        console.log(searchTableConfig.searchFields);
-        return searchTableConfig.searchFields.map((field) => field.name);
+    const removeSearchTable = (searchTablesIndex: number) => {
+        setSearchTables(searchTables => {
+            searchTables.splice(searchTablesIndex, 1);
+        });
     }
 
     return <>
         <Box className='settings-container'>
-            <FormField label="Select Your AI Provider">
-                <SelectButtons
-                    value={aiProviderName}
-                    onChange={newValue => setAiProviderName(newValue as string)}
-                    options={[{value: "openai", label: `${aiProviderData["openai"]!.prettyName}`}, {
-                        value: "cohere",
-                        label: `${aiProviderData["cohere"]!.prettyName}`
-                    }]}
-                />
-            </FormField>
-            <FormField label={`${aiProviderData[aiProviderName]!.prettyName} API Key`}>
-                <Input
-                    placeholder={`Enter your ${aiProviderData[aiProviderName]!.prettyName} API key.`}
-                    type='text'
-                    value={aiProvidersConfiguration[aiProviderName]!.apiKey}
-                    onChange={e => {
-                        const newValue = e.target.value;
-                        setAiProvidersConfiguration(aiProvidersConfiguration => {
-                            aiProvidersConfiguration[aiProviderName]!.apiKey = newValue;
-                        });
-                    }}
-                />
-            </FormField>
-            <FormField label="Embedding Model">
-                <Select
-                    options={aiProviderData[aiProviderName]!.embeddingModelSelectOptions}
-                    value={aiProvidersConfiguration[aiProviderName]!.embeddingModel}
-                    onChange={newValue => {
-                        setAiProvidersConfiguration(aiProvidersConfiguration => {
-                            aiProvidersConfiguration[aiProviderName]!.embeddingModel = newValue as string
-                        });
-                    }}
-                />
-            </FormField>
+            <Box border='default' padding={3} className='ai-config-container'>
+                <FormField label="Select Your AI Provider">
+                    <SelectButtons
+                        value={aiProviderName}
+                        onChange={newValue => setAiProviderName(newValue as string)}
+                        options={[{value: "openai", label: `${aiProviderData["openai"]!.prettyName}`}, {
+                            value: "cohere",
+                            label: `${aiProviderData["cohere"]!.prettyName}`
+                        }]}
+                    />
+                </FormField>
+                <FormField label={`${aiProviderData[aiProviderName]!.prettyName} API Key`}>
+                    <Input
+                        placeholder={`Enter your ${aiProviderData[aiProviderName]!.prettyName} API key`}
+                        type='text'
+                        required={true}
+                        value={aiProvidersConfiguration[aiProviderName]!.apiKey}
+                        onChange={e => {
+                            const newValue = e.target.value;
+                            setAiProvidersConfiguration(aiProvidersConfiguration => {
+                                aiProvidersConfiguration[aiProviderName]!.apiKey = newValue;
+                            });
+                        }}
+                    />
+                </FormField>
+                <details>
+                    <summary>Advanced Configuration</summary>
+                    <Box padding={3}>
 
-            <Box>
-                <Heading size='small'>Search Tables</Heading>
-                {searchTables.map((searchTableConfig, index) =>
-                    <Box key={index}>
-                        <Text>{searchTableConfig.table.name}</Text>
-                        {(searchTableConfig.searchFields).length !== 0 &&
-                            <ol>
-                                {searchTableConfig.searchFields.map((searchField, index) =>
-                                    <li key={index}><FieldIcon position='relative' top='3px' field={searchField} size={16}/> <Text display='inline-block'>{searchField.name}</Text></li>)}
-                            </ol>}
-                    </Box>)}
+                        <FormField label="Embedding Model">
+                            <Select
+                                options={aiProviderData[aiProviderName]!.embeddingModelSelectOptions}
+                                value={aiProvidersConfiguration[aiProviderName]!.embeddingModel}
+                                onChange={newValue => {
+                                    setAiProvidersConfiguration(aiProvidersConfiguration => {
+                                        aiProvidersConfiguration[aiProviderName]!.embeddingModel = newValue as string
+                                    });
+                                }}
+                            />
+                        </FormField>
+                    </Box>
+                </details>
             </Box>
 
-            <SearchTablePicker setSearchTables={setSearchTables} base={base}/>
+            <Box maxWidth='1000px' marginTop={4} border='default' padding={4}>
+                <Heading size='small'>Searchable Tables</Heading>
 
-            {/*<Button disabled={configurationUpdatePending} variant='primary'*/}
-            {/*        onClick={() => attemptConfigUpdateAndShowToast({*/}
-            {/*                tableAndFieldIds: tablesAndFieldsFormState,*/}
-            {/*                otherConfiguration: otherConfigurationFormState*/}
-            {/*            }, manualConfigurationToastId,*/}
-            {/*            setConfigurationUpdatePending,*/}
-            {/*            setFormErrorState,*/}
-            {/*            validateConfigUpdateAndSaveToGlobalConfig*/}
-            {/*        )}>*/}
-            {/*    {configurationUpdatePending*/}
-            {/*        ? <Loader scale={0.2} fillColor='white'/>*/}
-            {/*        : <Text textColor='white'>Save Configuration</Text>*/}
-            {/*    }*/}
-            {/*</Button>*/}
+                <Box display='flex' flexWrap='wrap'>
+                    {!schemaChanged && searchTables.map((searchTableConfig, index) =>
+                        <Box margin={3} border='default' key={index} padding={3} display='flex' flexDirection='column'
+                             justifyContent='space-between'>
+                            <Box>
+                                <Heading size="xsmall" display='inline'>Table: </Heading><Text
+                                display='inline'>{searchTableConfig.table.name}</Text>
+                            </Box>
+                            <Box>
+                                <Heading marginTop={3} size='xsmall'>Searchable Fields:</Heading>
+                                {(searchTableConfig.searchFields).length !== 0 &&
+                                    searchTableConfig.searchFields.map((searchField, index) =>
+                                        <Box marginLeft={3}><FieldIcon position='relative' top='3px' field={searchField}
+                                                                       size={16}/> <Text
+                                            display='inline-block'>{searchField.name}</Text></Box>)
+                                }
+                            </Box>
+                            <Button icon='trash' marginTop={3} onClick={() => removeSearchTable(index)}>Remove</Button>
+                        </Box>)}
+                </Box>
+                <SearchTablePicker searchTables={searchTables} setSearchTables={setSearchTables} base={base}/>
+            </Box>
+
+
+            <Button
+                maxWidth='200px'
+                marginTop={4}
+                disabled={configurationUpdatePending} variant='primary'
+                onClick={() => attemptConfigUpdateAndShowToast(newExtensionConfigurationToSave, manualConfigurationToastId,
+                    setConfigurationUpdatePending,
+                    validateConfigUpdateAndSaveToGlobalConfig
+                )}>
+                {configurationUpdatePending
+                    ? <Loader scale={0.2} fillColor='white'/>
+                    : <Text textColor='white'>Save Configuration</Text>
+                }
+            </Button>
+
             <Toast {...manualConfigurationToastId} styles={{marginTop: '0'}}/>
         </Box>
     </>

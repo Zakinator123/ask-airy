@@ -48,14 +48,14 @@ const SearchWrapper = ({
             <Search
                 semanticSearchService={
                 new SemanticSearchService(
-                    new OpenAIEmbeddingService('test'),
+                    new OpenAIEmbeddingService(''),
                     new AirtableMutationService(new RateLimiter(10, 5)))}/>
             {/*<Text size="large">You must configure the extension in the settings tab before you can use it!</Text>*/}
         </Box>;
     }
 
     const validationResult = configurationValidator(extensionConfiguration.tableAndFieldIds);
-    return validationResult.errorsPresent ?
+    return validationResult.errorsOccurred ?
         <Box className='centered-container'><Text>
             Something has changed with your base schema and your extension configuration is now invalid. Please correct
             it in the

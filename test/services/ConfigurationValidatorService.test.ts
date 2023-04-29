@@ -19,8 +19,8 @@ describe('ConfigurationValidatorService', () => {
 
     it('Shows errors when all required fields are empty.', () => {
         const validationResult = validateConfiguration(blankConfigurationState);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedRequiredConfigKeys).forEach(configKey => expect(validationResult.errors[configKey]).toBe('This value is required.'));
             Object.values(OptionalFieldName).forEach(configKey => expect(validationResult.errors[configKey]).toBe(''));
         } else throw new Error('Validation Errors missing');
@@ -30,8 +30,8 @@ describe('ConfigurationValidatorService', () => {
         const initialConfiguration: TablesAndFieldsConfigurationIds = {...blankConfigurationState};
         initialConfiguration.recipientTable = 'someNonEmptyValue';
         const validationResult = validateConfiguration(initialConfiguration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedRequiredConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === TableName.recipientTable ? '' : 'This value is required.';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -45,8 +45,8 @@ describe('ConfigurationValidatorService', () => {
         initialConfiguration.recipientTable = 'duplicateValue';
         initialConfiguration.inventoryTable = 'duplicateValue';
         const validationResult = validateConfiguration(initialConfiguration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedRequiredConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === TableName.recipientTable || configKey === TableName.inventoryTable ? 'Configuration values must be unique.' : 'This value is required.';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -70,8 +70,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === TableName.checkoutsTable ? 'Table no longer exists' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -94,8 +94,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === RequiredFieldName.linkedRecipientTableField ? 'Field no longer exists' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -118,8 +118,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === OptionalFieldName.dateDueField ? 'Previously enabled optional field no longer exists.' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -142,8 +142,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 const expectedErrorString = configKey === RequiredFieldName.checkedInField ? 'Field must be of type checkbox' : '';
                 expect(validationResult.errors[configKey]).toBe(expectedErrorString);
@@ -166,8 +166,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeTruthy();
-        if (validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeTruthy();
+        if (validationResult.errorsOccurred) {
             Object.values(combinedConfigKeys).forEach(configKey => {
                 let expectedErrorString: string;
                 if (configKey === RequiredFieldName.linkedRecipientTableField) {
@@ -195,8 +195,8 @@ describe('ConfigurationValidatorService', () => {
         }
 
         const validationResult = validateConfiguration(configuration);
-        expect(validationResult.errorsPresent).toBeFalsy();
-        if (!validationResult.errorsPresent) {
+        expect(validationResult.errorsOccurred).toBeFalsy();
+        if (!validationResult.errorsOccurred) {
             const config = validationResult.configuration;
             expect(config.inventoryTable).toBeInstanceOf(Table);
             expect(config.recipientTable).toBeInstanceOf(Table);
