@@ -1,6 +1,16 @@
 import React, {useEffect, useState} from "react";
-import {Box, FormField, Input, loadCSSFromString, Select, SelectButtons} from "@airtable/blocks/ui";
-import {Base} from "@airtable/blocks/models";
+import {
+    Box,
+    FieldIcon,
+    FormField,
+    Heading,
+    Input,
+    loadCSSFromString,
+    Select,
+    SelectButtons,
+    Text
+} from "@airtable/blocks/ui";
+import {Base, Field, Table} from "@airtable/blocks/models";
 import {blankErrorState} from "../utils/Constants";
 import {
     ExtensionConfiguration,
@@ -13,10 +23,10 @@ import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import {asyncAirtableOperationWrapper, changeLoadingToastToErrorToast} from "../utils/RandomUtils";
 import {OfflineToastMessage} from "./OfflineToastMessage";
-import {Toast} from "./Toast";
 import {ExtensionConfigurationUpdateResult} from "../types/OtherTypes";
-import {FieldId, TableId} from "@airtable/blocks/types";
 import {useImmer} from "use-immer";
+import {SearchTablePicker} from "./SearchTablePicker";
+import {Toast} from "./Toast";
 
 loadCSSFromString(`
 .settings-container {
@@ -110,10 +120,44 @@ type NewExtensionConfiguration = {
     searchTables: SearchTableConfig[],
 }
 
-type SearchTableConfig = {
-    tableId: TableId,
-    searchFieldIds: FieldId[],
-    intelliSearchIndexFieldId: FieldId,
+export type SearchTableConfig = {
+    table: Table,
+    searchFields: Field[],
+}
+
+const defaultConfig: NewExtensionConfiguration = {
+    currentAiProvider: 'openai',
+    aiProvidersConfiguration: {
+        openai: {
+            apiKey: '',
+            embeddingModel: 'text-embedding-ada-002',
+            otherSettings: {},
+        },
+        cohere: {
+            apiKey: '',
+            embeddingModel: 'large',
+            otherSettings: {},
+        }
+    },
+    searchTables: [],
+}
+type AIProviderOptions = {
+    prettyName: string,
+    embeddingModelSelectOptions: { value: string, label: string }[],
+}
+
+const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
+    openai: {
+        prettyName: 'OpenAI',
+        embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
+    },
+    cohere: {
+        prettyName: 'Cohere',
+        embeddingModelSelectOptions: [{value: 'large', label: 'large'}, {
+            value: 'small',
+            label: 'small'
+        }, {value: 'multilingual-22-12', label: 'multilingual-22-12'}]
+    },
 }
 
 export const Settings = ({
@@ -121,7 +165,7 @@ export const Settings = ({
                              currentOtherConfiguration,
                              base,
                              validateTablesAndFields,
-                             newExtensionConfifguration,
+                             newExtensionConfiguration,
                              validateConfigUpdateAndSaveToGlobalConfig,
                              configurationUpdatePending,
                              setConfigurationUpdatePending
@@ -131,51 +175,24 @@ export const Settings = ({
                                  currentOtherConfiguration: OtherExtensionConfiguration | undefined,
                                  base: Base,
                                  validateTablesAndFields: (configurationData: TablesAndFieldsConfigurationIds) => ValidationResult,
-                                 newExtensionConfifguration?: NewExtensionConfiguration,
+                                 newExtensionConfiguration?: NewExtensionConfiguration,
                                  validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>,
                                  configurationUpdatePending: boolean,
                                  setConfigurationUpdatePending: (pending: boolean) => void
                              }) => {
     useEffect(() => () => toast.dismiss(), []);
 
-    const defaultConfig: NewExtensionConfiguration = {
-        currentAiProvider: 'openai',
-        aiProvidersConfiguration: {
-            openai: {
-                apiKey: '',
-                embeddingModel: 'text-embedding-ada-002',
-                otherSettings: {},
-            },
-            cohere: {
-                apiKey: '',
-                embeddingModel: 'large',
-                otherSettings: {},
-            }
-        },
-        searchTables: [],
-    }
-
-    const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(newExtensionConfifguration ? newExtensionConfifguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
-    const [aiProviderName, setAiProviderName] = useState(newExtensionConfifguration ? newExtensionConfifguration.currentAiProvider : defaultConfig.currentAiProvider);
+    const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(newExtensionConfiguration ? newExtensionConfiguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
+    const [searchTables, setSearchTables] = useImmer(newExtensionConfiguration ? newExtensionConfiguration.searchTables : defaultConfig.searchTables);
+    const [aiProviderName, setAiProviderName] = useState(newExtensionConfiguration ? newExtensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
 
-    type AIProviderOptions = {
-        prettyName: string,
-        embeddingModelSelectOptions: { value: string, label: string }[],
-    }
+    console.log(searchTables);
 
-    const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
-        openai: {
-            prettyName: 'OpenAI',
-            embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
-        },
-        cohere: {
-            prettyName: 'Cohere',
-            embeddingModelSelectOptions: [{value: 'large', label: 'large'}, {
-                value: 'small',
-                label: 'small'
-            }, {value: 'multilingual-22-12', label: 'multilingual-22-12'}]
-        },
+
+    const getFieldNamesForSearchTableConfig = (searchTableConfig: SearchTableConfig) => {
+        console.log(searchTableConfig.searchFields);
+        return searchTableConfig.searchFields.map((field) => field.name);
     }
 
     return <>
@@ -214,6 +231,22 @@ export const Settings = ({
                     }}
                 />
             </FormField>
+
+            <Box>
+                <Heading size='small'>Search Tables</Heading>
+                {searchTables.map((searchTableConfig, index) =>
+                    <Box key={index}>
+                        <Text>{searchTableConfig.table.name}</Text>
+                        {(searchTableConfig.searchFields).length !== 0 &&
+                            <ol>
+                                {searchTableConfig.searchFields.map((searchField, index) =>
+                                    <li key={index}><FieldIcon position='relative' top='3px' field={searchField} size={16}/> <Text display='inline-block'>{searchField.name}</Text></li>)}
+                            </ol>}
+                    </Box>)}
+            </Box>
+
+            <SearchTablePicker setSearchTables={setSearchTables} base={base}/>
+
             {/*<Button disabled={configurationUpdatePending} variant='primary'*/}
             {/*        onClick={() => attemptConfigUpdateAndShowToast({*/}
             {/*                tableAndFieldIds: tablesAndFieldsFormState,*/}

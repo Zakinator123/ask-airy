@@ -94,7 +94,9 @@ export class SemanticSearchService implements SearchService {
 
         const performance = window.performance;
         const startTime = performance.now();
+
         const heap = new Heap<[number, Record]>((a, b) => a[0] - b[0]);
+        ///
         for (const record of recordsToSearch) {
             const searchIndexData = JSON.parse(record.getCellValue(intelliSearchIndexField.id) as string) as SearchIndexData;
             const dotProduct = this.computeDotProduct(embeddedQuery, searchIndexData.embedding);
