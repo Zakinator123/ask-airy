@@ -5,12 +5,14 @@ import {
     FieldIcon,
     FormField,
     Heading,
+    Icon,
     Input,
     loadCSSFromString,
     Loader,
     Select,
     SelectButtons,
-    Text
+    Text,
+    Tooltip
 } from "@airtable/blocks/ui";
 import {Base} from "@airtable/blocks/models";
 import {
@@ -23,10 +25,10 @@ import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import {asyncAirtableOperationWrapper, changeLoadingToastToErrorToast} from "../utils/RandomUtils";
 import {OfflineToastMessage} from "./OfflineToastMessage";
-import {ExtensionConfigurationUpdateResult} from "../types/OtherTypes";
 import {useImmer} from "use-immer";
 import {SearchTablePicker} from "./SearchTablePicker";
 import {Toast} from "./Toast";
+import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 
 loadCSSFromString(`
 .settings-container {
@@ -98,18 +100,20 @@ const attemptConfigUpdateAndShowToast = (
     extensionConfiguration: ExtensionConfiguration,
     toastContainerId: { containerId: Id },
     setConfigurationUpdatePending: (pending: boolean) => void,
-    validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>
+    globalConfigSettingsService: GlobalConfigSettingsService
 ) => {
     setConfigurationUpdatePending(true);
 
     const configurationUpdateToastId = toast.loading('Attempting to save configuration..', toastContainerId);
-    asyncAirtableOperationWrapper(() => validateConfigUpdateAndSaveToGlobalConfig(extensionConfiguration),
+    asyncAirtableOperationWrapper(() => globalConfigSettingsService.validateExtensionConfigUpdateAndSaveToGlobalConfig(extensionConfiguration),
         () => toast.loading(<OfflineToastMessage/>, {autoClose: false, containerId: toastContainerId.containerId}))
         .then((configurationUpdateResult) => {
             if (configurationUpdateResult.errorsOccurred) {
                 changeLoadingToastToErrorToast(configurationUpdateResult.errorMessage, configurationUpdateToastId, toastContainerId);
-                // setFormErrorState(configurationUpdateResult.tablesAndFieldsConfigurationErrors);
             } else {
+
+                // TODO: Fetch the new configuration from the global config and update the state with it
+
                 toast.update(configurationUpdateToastId, {
                     render: 'Configuration saved successfully!',
                     type: 'success',
@@ -118,7 +122,6 @@ const attemptConfigUpdateAndShowToast = (
                     closeButton: true,
                     autoClose: 4000,
                 });
-                // setFormErrorState(blankErrorState);
             }
         })
         .catch(() => changeLoadingToastToErrorToast('An unexpected error occurred', configurationUpdateToastId, toastContainerId))
@@ -128,14 +131,14 @@ const attemptConfigUpdateAndShowToast = (
 export const Settings = ({
                              base,
                              extensionConfiguration,
-                             validateConfigUpdateAndSaveToGlobalConfig,
+                             globalConfigSettingsService,
                              configurationUpdatePending,
                              setConfigurationUpdatePending
                          }:
                              {
                                  base: Base,
                                  extensionConfiguration?: ExtensionConfiguration,
-                                 validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>,
+                                 globalConfigSettingsService: GlobalConfigSettingsService
                                  configurationUpdatePending: boolean,
                                  setConfigurationUpdatePending: (pending: boolean) => void
                              }) => {
@@ -208,6 +211,8 @@ export const Settings = ({
     return <>
         <Box className='settings-container'>
             <Box border='default' padding={3} className='ai-config-container'>
+                <Heading size='small' marginBottom={3}>AI Configuration</Heading>
+
                 <FormField label="Select Your AI Provider">
                     <SelectButtons
                         value={aiProviderName}
@@ -254,7 +259,7 @@ export const Settings = ({
                 </details>
             </Box>
 
-            <Box maxWidth='1000px' marginTop={4} border='default' padding={4}>
+            <Box maxWidth='1000px' marginTop={4} border='default' padding={3}>
                 <Heading size='small'>Searchable Tables</Heading>
 
                 <Box display='flex' flexWrap='wrap'>
@@ -276,6 +281,27 @@ export const Settings = ({
                                             display='inline-block'>{searchField.name}</Text></Box>)
                                 }
                             </Box>
+
+                            <Box>
+                                <Heading marginTop={3} size='xsmall'>IntelliSearch Index Field: <Tooltip
+                                    content="This field will be used to store AI-generated search data."
+                                    placementX={Tooltip.placements.CENTER}
+                                    placementY={Tooltip.placements.BOTTOM}
+                                    shouldHideTooltipOnClick={true}
+                                ><Icon size={12} name='info' position='relative' top='1px'/></Tooltip></Heading>
+                                <Box marginLeft={3}>
+                                    {(searchTableConfig.intelliSearchIndexFields[aiProviderName] !== undefined)
+                                        ? <Text>
+                                            ✅ {aiProviderData[aiProviderName].prettyName} index field already created.
+                                        </Text>
+                                        : <Text>
+                                            ❌ {aiProviderData[aiProviderName].prettyName} index field not yet
+                                            created. <br/>
+                                            Save configuration to create field.
+                                        </Text>
+                                    }
+                                </Box>
+                            </Box>
                             <Button icon='trash' marginTop={3}
                                     onClick={() => removeSearchTable(index)}>Remove</Button>
                         </Box>)}
@@ -290,7 +316,7 @@ export const Settings = ({
                 disabled={configurationUpdatePending} variant='primary'
                 onClick={() => attemptConfigUpdateAndShowToast(newExtensionConfigurationToSave, manualConfigurationToastId,
                     setConfigurationUpdatePending,
-                    validateConfigUpdateAndSaveToGlobalConfig
+                    globalConfigSettingsService
                 )}>
                 {configurationUpdatePending
                     ? <Loader scale={0.2} fillColor='white'/>

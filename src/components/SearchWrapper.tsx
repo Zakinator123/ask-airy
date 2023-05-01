@@ -1,4 +1,4 @@
-import {ExtensionConfiguration, TablesAndFieldsConfigurationIds, ValidationResult} from "../types/ConfigurationTypes";
+import {ExtensionConfiguration} from "../types/ConfigurationTypes";
 import React from "react";
 import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
@@ -29,7 +29,6 @@ loadCSSFromString(`
 const SearchWrapper = ({
                            airtableMutationService,
                            extensionConfiguration,
-                           configurationValidator,
                            isPremiumUser,
                            transactionIsProcessing,
                            setTransactionIsProcessing
@@ -37,7 +36,6 @@ const SearchWrapper = ({
                            {
                                airtableMutationService: AirtableMutationService,
                                extensionConfiguration: ExtensionConfiguration | undefined,
-                               configurationValidator: (configIds: TablesAndFieldsConfigurationIds) => ValidationResult,
                                isPremiumUser: boolean,
                                transactionIsProcessing: boolean,
                                setTransactionIsProcessing: (processing: boolean) => void
@@ -54,8 +52,7 @@ const SearchWrapper = ({
         </Box>;
     }
 
-    const validationResult = configurationValidator(extensionConfiguration.tableAndFieldIds);
-    return validationResult.errorsOccurred ?
+    return false ?
         <Box className='centered-container'><Text>
             Something has changed with your base schema and your extension configuration is now invalid. Please correct
             it in the

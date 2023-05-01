@@ -2,13 +2,11 @@ import {Box, Heading, Icon, loadCSSFromString, Loader, Text, useBase, useGlobalC
 import React, {Suspense, useEffect, useState} from 'react';
 import {Settings} from "./Settings";
 import {ExtensionConfiguration,} from "../types/ConfigurationTypes";
-import {getConfigurationValidatorForBase} from "../services/ConfigurationValidatorService";
 // @ts-ignore
 import {Tab, TabList, TabPanel, Tabs} from 'react-tabs';
 import SearchWrapper from "./SearchWrapper";
 import {About} from "./About";
 import {Premium} from "./Premium";
-import {getExtensionConfigSaver} from "../services/GlobalConfigUpdateService";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {IconName} from "@airtable/blocks/dist/types/src/ui/icon_config";
 import {GumroadLicenseVerificationService} from "../services/LicenseVerificationService";
@@ -16,6 +14,7 @@ import {toast} from "react-toastify";
 import {Toast} from "./Toast";
 import {PremiumStatus} from "../types/OtherTypes";
 import {SearchIcon} from "./SearchIcon";
+import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 
 loadCSSFromString(`
 .container {
@@ -130,6 +129,8 @@ export function ExtensionWithSettings({
     const base = useBase();
     const globalConfig = useGlobalConfig();
 
+    const globalConfigSettingsService = new GlobalConfigSettingsService(globalConfig);
+
     const [premiumUpdatePending, setPremiumUpdatePending] = useState(false);
     const [configurationUpdatePending, setConfigurationUpdatePending] = useState(false);
     const [transactionIsProcessing, setTransactionIsProcessing] = useState<boolean>(false);
@@ -142,7 +143,6 @@ export function ExtensionWithSettings({
     const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 1 : 1);
 
     const updatePending = configurationUpdatePending || transactionIsProcessing || premiumUpdatePending;
-    const configurationValidator = getConfigurationValidatorForBase(base);
 
     useEffect(() => {
         if (premiumLicense !== undefined) {
@@ -200,7 +200,6 @@ export function ExtensionWithSettings({
                         <SearchWrapper
                             airtableMutationService={airtableMutationService}
                             extensionConfiguration={extensionConfig}
-                            configurationValidator={configurationValidator}
                             isPremiumUser={premiumStatus === 'premium'}
                             transactionIsProcessing={transactionIsProcessing}
                             setTransactionIsProcessing={setTransactionIsProcessing}/>
@@ -210,7 +209,7 @@ export function ExtensionWithSettings({
             <TabPanel>
                 <Settings
                     base={base}
-                    validateConfigUpdateAndSaveToGlobalConfig={getExtensionConfigSaver(globalConfig)}
+                    globalConfigSettingsService={globalConfigSettingsService}
                     configurationUpdatePending={configurationUpdatePending}
                     setConfigurationUpdatePending={setConfigurationUpdatePending}/>
             </TabPanel>

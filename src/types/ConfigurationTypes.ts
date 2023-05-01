@@ -18,7 +18,7 @@ export type ExtensionConfiguration = {
 export type SerializableExtensionConfiguration = {
     currentAiProvider: AIProviderName,
     aiProvidersConfiguration: AiProvidersConfiguration
-    searchTables: SearchTableConfigIds[],
+    searchTables: SerializableSearchTableConfig[],
 }
 
 export type SearchTableConfig = {
@@ -30,7 +30,7 @@ export type SearchTableConfig = {
     }
 }
 
-export type SearchTableConfigIds = {
+export type SerializableSearchTableConfig = {
     table: TableId,
     searchFields: FieldId[],
     intelliSearchIndexFields: {
@@ -43,3 +43,5 @@ export type AIProviderOptions = {
     prettyName: string,
     embeddingModelSelectOptions: { value: string, label: string }[],
 }
+
+export type GlobalConfigUpdateResult = { errorsOccurred: false, } | { errorsOccurred: true, errorMessage: string }
