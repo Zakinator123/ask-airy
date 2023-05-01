@@ -16,7 +16,8 @@ import {Base} from "@airtable/blocks/models";
 import {
     AIProviderName,
     AIProviderOptions,
-    NewExtensionConfiguration,
+    ExtensionConfiguration,
+    SearchTableConfig,
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
@@ -38,15 +39,6 @@ loadCSSFromString(`
     height: 100%;
     width: 100%;
     max-width: fit-content;
-}
-
-.intro-settings-text {
-    margin: 0 0 1rem 0;
-}
-
-.table-fields: {
-    display: flex;
-    flex-direction: column;
 }
 
 @media only screen and (min-width: 600px) {
@@ -71,7 +63,7 @@ loadCSSFromString(`
 }
 `)
 
-const defaultConfig: NewExtensionConfiguration = {
+const defaultConfig: ExtensionConfiguration = {
     currentAiProvider: 'openai',
     aiProvidersConfiguration: {
         openai: {
@@ -103,10 +95,10 @@ const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
 }
 
 const attemptConfigUpdateAndShowToast = (
-    extensionConfiguration: NewExtensionConfiguration,
+    extensionConfiguration: ExtensionConfiguration,
     toastContainerId: { containerId: Id },
     setConfigurationUpdatePending: (pending: boolean) => void,
-    validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: NewExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>
+    validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>
 ) => {
     setConfigurationUpdatePending(true);
 
@@ -134,57 +126,78 @@ const attemptConfigUpdateAndShowToast = (
 };
 
 export const Settings = ({
-                             currentTableAndFieldIds,
-                             currentOtherConfiguration,
                              base,
-                             validateTablesAndFields,
-                             newExtensionConfiguration,
+                             extensionConfiguration,
                              validateConfigUpdateAndSaveToGlobalConfig,
                              configurationUpdatePending,
                              setConfigurationUpdatePending
                          }:
                              {
-                                 currentTableAndFieldIds: TablesAndFieldsConfigurationIds | undefined,
-                                 currentOtherConfiguration: OtherExtensionConfiguration | undefined,
                                  base: Base,
-                                 validateTablesAndFields: (configurationData: TablesAndFieldsConfigurationIds) => ValidationResult,
-                                 newExtensionConfiguration?: NewExtensionConfiguration,
+                                 extensionConfiguration?: ExtensionConfiguration,
                                  validateConfigUpdateAndSaveToGlobalConfig: (extensionConfiguration: ExtensionConfiguration) => Promise<ExtensionConfigurationUpdateResult>,
                                  configurationUpdatePending: boolean,
                                  setConfigurationUpdatePending: (pending: boolean) => void
                              }) => {
     useEffect(() => () => toast.dismiss(), []);
 
-    const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(newExtensionConfiguration ? newExtensionConfiguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
-    const [searchTables, setSearchTables] = useImmer(newExtensionConfiguration ? newExtensionConfiguration.searchTables : defaultConfig.searchTables);
-    const [aiProviderName, setAiProviderName] = useState(newExtensionConfiguration ? newExtensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
+    const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(extensionConfiguration ? extensionConfiguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
+    const [aiProviderName, setAiProviderName] = useState(extensionConfiguration ? extensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
+    const [searchTables, setSearchTables] = useImmer(extensionConfiguration ? extensionConfiguration.searchTables : defaultConfig.searchTables);
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
 
-    const newExtensionConfigurationToSave: NewExtensionConfiguration = {
+    const newExtensionConfigurationToSave: ExtensionConfiguration = {
         currentAiProvider: aiProviderName,
         aiProvidersConfiguration: aiProvidersConfiguration,
         searchTables: searchTables,
     }
 
-    // Clear out tables/fields that don't exist anymore
-    let schemaChanged = false;
-    searchTables.forEach((searchTable, searchTablesIndex) => {
-        if (searchTable.table.isDeleted) {
-            setSearchTables(prevSearchTables => {
-                prevSearchTables.splice(searchTablesIndex, 1);
-            });
-            schemaChanged = true;
-        } else {
-            searchTable.searchFields.forEach((searchField, searchFieldsIndex) => {
-                if (searchField.isDeleted) {
-                    setSearchTables(prevSearchTables => {
-                        prevSearchTables[searchTablesIndex]!.searchFields.splice(searchFieldsIndex, 1);
-                    });
-                    schemaChanged = true;
+    const getSanitizedSearchTableConfigs = (): { deletionOccurred: true, newSearchTableConfigs: SearchTableConfig[] } | { deletionOccurred: false } => {
+        let deletionOccurred = false;
+        const newSearchTableConfigs = searchTables
+            .filter(searchTable => {
+                if (searchTable.table.isDeleted) {
+                    deletionOccurred = true;
+                    return false;
                 }
+                return true;
             })
+            .map(searchTable => {
+                const newSearchFields = searchTable.searchFields.filter(searchField => {
+                    if (searchField.isDeleted) {
+                        deletionOccurred = true;
+                        return false;
+                    }
+                    return true;
+                });
+
+                const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
+                for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
+                    if (indexField !== undefined && indexField.isDeleted) {
+                        deletionOccurred = true;
+                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
+                    } else {
+                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
+                    }
+                }
+
+                return {
+                    ...searchTable,
+                    searchFields: newSearchFields,
+                    intelliSearchIndexFields: newIntelliSearchIndexFields
+                };
+            });
+
+        if (deletionOccurred) {
+            return {deletionOccurred: true, newSearchTableConfigs: newSearchTableConfigs};
         }
-    })
+        return {deletionOccurred: false};
+    };
+
+    const sanitizeSearchTableConfigs = getSanitizedSearchTableConfigs()
+    if (sanitizeSearchTableConfigs.deletionOccurred) {
+        setSearchTables(sanitizeSearchTableConfigs.newSearchTableConfigs);
+    }
 
     const removeSearchTable = (searchTablesIndex: number) => {
         setSearchTables(searchTables => {
@@ -198,38 +211,41 @@ export const Settings = ({
                 <FormField label="Select Your AI Provider">
                     <SelectButtons
                         value={aiProviderName}
-                        onChange={newValue => setAiProviderName(newValue as string)}
-                        options={[{value: "openai", label: `${aiProviderData["openai"]!.prettyName}`}, {
-                            value: "cohere",
-                            label: `${aiProviderData["cohere"]!.prettyName}`
-                        }]}
+                        onChange={newValue => setAiProviderName(newValue as AIProviderName)}
+                        options={
+                            [{
+                                value: "openai",
+                                label: `${aiProviderData["openai"].prettyName}`
+                            }, {
+                                value: "cohere",
+                                label: `${aiProviderData["cohere"].prettyName}`
+                            }]}
                     />
                 </FormField>
-                <FormField label={`${aiProviderData[aiProviderName]!.prettyName} API Key`}>
+                <FormField label={`${aiProviderData[aiProviderName].prettyName} API Key`}>
                     <Input
-                        placeholder={`Enter your ${aiProviderData[aiProviderName]!.prettyName} API key`}
+                        placeholder={`Enter your ${aiProviderData[aiProviderName].prettyName} API key`}
                         type='text'
                         required={true}
-                        value={aiProvidersConfiguration[aiProviderName]!.apiKey}
+                        value={aiProvidersConfiguration[aiProviderName].apiKey}
                         onChange={e => {
                             const newValue = e.target.value;
                             setAiProvidersConfiguration(aiProvidersConfiguration => {
-                                aiProvidersConfiguration[aiProviderName]!.apiKey = newValue;
+                                aiProvidersConfiguration[aiProviderName].apiKey = newValue;
                             });
                         }}
                     />
                 </FormField>
                 <details>
                     <summary>Advanced Configuration</summary>
-                    <Box padding={3}>
-
+                    <Box padding={3} paddingBottom={0}>
                         <FormField label="Embedding Model">
                             <Select
-                                options={aiProviderData[aiProviderName]!.embeddingModelSelectOptions}
-                                value={aiProvidersConfiguration[aiProviderName]!.embeddingModel}
+                                options={aiProviderData[aiProviderName].embeddingModelSelectOptions}
+                                value={aiProvidersConfiguration[aiProviderName].embeddingModel}
                                 onChange={newValue => {
                                     setAiProvidersConfiguration(aiProvidersConfiguration => {
-                                        aiProvidersConfiguration[aiProviderName]!.embeddingModel = newValue as string
+                                        aiProvidersConfiguration[aiProviderName].embeddingModel = newValue as string
                                     });
                                 }}
                             />
@@ -242,8 +258,9 @@ export const Settings = ({
                 <Heading size='small'>Searchable Tables</Heading>
 
                 <Box display='flex' flexWrap='wrap'>
-                    {!schemaChanged && searchTables.map((searchTableConfig, index) =>
-                        <Box margin={3} border='default' key={index} padding={3} display='flex' flexDirection='column'
+                    {searchTables.map((searchTableConfig, index) =>
+                        <Box margin={3} border='default' key={index} padding={3} display='flex'
+                             flexDirection='column'
                              justifyContent='space-between'>
                             <Box>
                                 <Heading size="xsmall" display='inline'>Table: </Heading><Text
@@ -253,12 +270,14 @@ export const Settings = ({
                                 <Heading marginTop={3} size='xsmall'>Searchable Fields:</Heading>
                                 {(searchTableConfig.searchFields).length !== 0 &&
                                     searchTableConfig.searchFields.map((searchField, index) =>
-                                        <Box marginLeft={3}><FieldIcon position='relative' top='3px' field={searchField}
+                                        <Box marginLeft={3}><FieldIcon position='relative' top='3px'
+                                                                       field={searchField}
                                                                        size={16}/> <Text
                                             display='inline-block'>{searchField.name}</Text></Box>)
                                 }
                             </Box>
-                            <Button icon='trash' marginTop={3} onClick={() => removeSearchTable(index)}>Remove</Button>
+                            <Button icon='trash' marginTop={3}
+                                    onClick={() => removeSearchTable(index)}>Remove</Button>
                         </Box>)}
                 </Box>
                 <SearchTablePicker searchTables={searchTables} setSearchTables={setSearchTables} base={base}/>

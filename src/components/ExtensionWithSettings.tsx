@@ -209,11 +209,8 @@ export function ExtensionWithSettings({
             </Box>
             <TabPanel>
                 <Settings
-                    currentTableAndFieldIds={extensionConfig?.tableAndFieldIds}
-                    currentOtherConfiguration={extensionConfig?.otherConfiguration}
                     base={base}
-                    validateTablesAndFields={configurationValidator}
-                    validateConfigUpdateAndSaveToGlobalConfig={getExtensionConfigSaver(globalConfig, configurationValidator)}
+                    validateConfigUpdateAndSaveToGlobalConfig={getExtensionConfigSaver(globalConfig)}
                     configurationUpdatePending={configurationUpdatePending}
                     setConfigurationUpdatePending={setConfigurationUpdatePending}/>
             </TabPanel>

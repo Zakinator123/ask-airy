@@ -2,12 +2,12 @@ import {Base, Field, Table} from "@airtable/blocks/models";
 import React, {useEffect, useState} from "react";
 import {Box, Button, ConfirmationDialog, FieldIcon, Select, Switch, Text} from "@airtable/blocks/ui";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
-import {SearchTableConfig} from "./Settings";
 import {Toast} from "./Toast";
 import {toast} from "react-toastify";
+import {SearchTableConfig} from "../types/ConfigurationTypes";
 
 export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
-    setSearchTables: (searchTables: (prevSearchTables: SearchTableConfig[]) => (SearchTableConfig | { searchFields: Field[]; table: Table | undefined })[]) => void,
+    setSearchTables: (searchTables: (prevSearchTables: SearchTableConfig[]) => SearchTableConfig[]) => void,
     searchTables: SearchTableConfig[],
     base: Base
 }) => {
@@ -57,10 +57,11 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                     <FormFieldLabelWithTooltip fieldLabel='Searchable Fields*'
                                                fieldLabelTooltip="Select fields that you'd like the IntelliSearch AI to know about."/>
                     <Box display='flex' flexWrap='wrap' marginTop={2}>
-                        {newSearchTable.fields.map(field => {
-                            return <Box margin={1}>
+                        {newSearchTable.fields.map((field, index) =>
+                            <Box key={index} margin={1}>
                                 <Switch
-                                    label={<><Box display='inline'><FieldIcon position='relative' top='3px' field={field}
+                                    label={<><Box display='inline'><FieldIcon position='relative' top='3px'
+                                                                              field={field}
                                                                               size={16}/></Box> <Text
                                         display='inline-block'>{field.name}</Text></>}
                                     value={newSearchTableFields.includes(field)}
@@ -72,8 +73,7 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                                         }
                                     }}
                                 />
-                            </Box>
-                        })}
+                            </Box>)}
                     </Box>
                     <Text marginTop={3} marginLeft={2} size='small' textColor='gray'>* Adding unnecessary fields to the
                         search
@@ -97,7 +97,11 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                     } else {
                         setSearchTables((prevSearchTables: SearchTableConfig[]) => [...prevSearchTables, {
                             table: newSearchTable,
-                            searchFields: newSearchTableFields
+                            searchFields: newSearchTableFields,
+                            intelliSearchIndexFields: {
+                                openai: undefined,
+                                cohere: undefined,
+                            }
                         }]);
                         setNewSearchTable(undefined);
                         setNewSearchTableFields([]);

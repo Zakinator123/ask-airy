@@ -1,9 +1,9 @@
-import {NewExtensionConfiguration, NewExtensionConfigurationForGlobalConfig} from "../types/ConfigurationTypes";
+import {ExtensionConfiguration, SerializableExtensionConfiguration} from "../types/ConfigurationTypes";
 import {GlobalConfig} from "@airtable/blocks/types";
 import {Field, FieldType} from "@airtable/blocks/models";
 
 export const getExtensionConfigSaver = (globalConfig: GlobalConfig) => {
-    return (extensionConfiguration: NewExtensionConfiguration) =>
+    return (extensionConfiguration: ExtensionConfiguration) =>
         validateExtensionConfigUpdateAndSaveToGlobalConfigCurried(globalConfig, extensionConfiguration);
 }
 
@@ -11,7 +11,7 @@ type NewValidationResult = { errorsOccurred: false, } | { errorsOccurred: true, 
 
 export const validateExtensionConfigUpdateAndSaveToGlobalConfigCurried = async (
     globalConfig: GlobalConfig,
-    extensionConfiguration: NewExtensionConfiguration)
+    extensionConfiguration: ExtensionConfiguration)
     : Promise<NewValidationResult> => {
 
     if (extensionConfiguration.aiProvidersConfiguration[extensionConfiguration.currentAiProvider]!.apiKey === '') return {
@@ -29,11 +29,11 @@ export const validateExtensionConfigUpdateAndSaveToGlobalConfigCurried = async (
         errorMessage: 'You must add at least one search field to each table.'
     }
 
+    // TODO: DO permission check with serialized type
     const hasPermission: boolean = globalConfig.hasPermissionToSet('extensionConfiguration', extensionConfiguration)
     if (hasPermission) {
 
-        console.log("Test 1")
-        const mappedConfigForGlobalConfig: NewExtensionConfigurationForGlobalConfig = {
+        const mappedConfigForGlobalConfig: SerializableExtensionConfiguration = {
             currentAiProvider: extensionConfiguration.currentAiProvider,
             aiProvidersConfiguration: extensionConfiguration.aiProvidersConfiguration,
             searchTables: await Promise.all(extensionConfiguration.searchTables.map(async searchTable => {
