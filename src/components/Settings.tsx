@@ -23,7 +23,11 @@ import {
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import {asyncAirtableOperationWrapper, changeLoadingToastToErrorToast} from "../utils/RandomUtils";
+import {
+    asyncAirtableOperationWrapper,
+    changeLoadingToastToErrorToast,
+    removeDeletedTablesAndFieldsFromSearchTableConfigs
+} from "../utils/RandomUtils";
 import {OfflineToastMessage} from "./OfflineToastMessage";
 import {useImmer} from "use-immer";
 import {SearchTablePicker} from "./SearchTablePicker";
@@ -129,9 +133,9 @@ export const Settings = ({
         searchTables: searchTableConfigs,
     }
 
-    const sanitizeSearchTableConfigs = globalConfigSettingsService.removeDeletedTablesAndFieldsFromSearchTableConfigs(searchTableConfigs)
+    const sanitizeSearchTableConfigs = removeDeletedTablesAndFieldsFromSearchTableConfigs(searchTableConfigs)
     if (sanitizeSearchTableConfigs.deletionOccurred) {
-        setSearchTableConfigs(sanitizeSearchTableConfigs.newSearchTableConfigs);
+        setSearchTableConfigs(sanitizeSearchTableConfigs.searchTableConfigs);
     }
 
     const removeSearchTable = (searchTablesIndex: number) => {
@@ -142,7 +146,7 @@ export const Settings = ({
 
     return <>
         <Box className='settings-container'>
-            <Box padding={3} display='flex' flexDirection='column' alignItems='center' maxWidth='500px' className='ai-config-container'>
+            <Box padding={3} display='flex' flexDirection='column' alignItems='center' maxWidth='500px ' className='ai-config-container'>
                 <Heading size='small' marginBottom={3}>AI Configuration</Heading>
 
                 <FormField label="Select Your AI Provider">

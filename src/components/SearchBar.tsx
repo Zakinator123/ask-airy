@@ -1,26 +1,27 @@
 import React, {useState} from "react";
 import {Button, Input, useRecords} from "@airtable/blocks/ui";
 import {SearchService, SearchTable} from "../types/CoreTypes";
-import {Record, Table} from "@airtable/blocks/models";
+import {Record} from "@airtable/blocks/models";
+import {AIProviderName, SearchTableConfigWithDefinedSearchIndexField} from "../types/ConfigurationTypes";
 
 
 export const SearchBar = ({
                               semanticSearchService,
-                              tableToSearch,
-                              setSearchResults
+                              searchTableConfig,
+                              setSearchResults,
                           }: {
     semanticSearchService: SearchService,
-    tableToSearch: Table,
-    setSearchResults: (results: Record[]) => void
+    searchTableConfig: SearchTableConfigWithDefinedSearchIndexField,
+    setSearchResults: (results: Record[]) => void,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
-    const recordsToSearch = useRecords(tableToSearch);
+    const recordsToSearch = useRecords(searchTableConfig.table);
 
     const searchTable: SearchTable = {
-        table: tableToSearch,
+        table: searchTableConfig.table,
         recordsToSearch,
-        searchFields: tableToSearch.fields,
-        intelliSearchIndexField: tableToSearch.getField('IntelliSearch Index'),
+        searchFields: searchTableConfig.searchFields,
+        intelliSearchIndexField: searchTableConfig.intelliSearchIndexField,
     }
 
     const executeSearch = async () => {

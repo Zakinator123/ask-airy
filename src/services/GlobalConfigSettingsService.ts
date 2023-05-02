@@ -9,6 +9,7 @@ import {
 import {GlobalConfig} from "@airtable/blocks/types";
 import {Base, Field, FieldType} from "@airtable/blocks/models";
 import {aiProviderData} from "../types/Constants";
+import {removeDeletedTablesAndFieldsFromSearchTableConfigs} from "../utils/RandomUtils";
 
 export class GlobalConfigSettingsService {
     private globalConfig: GlobalConfig;
@@ -168,55 +169,12 @@ export class GlobalConfigSettingsService {
             });
         }
 
-        const sanitizedSearchTableConfigs = this.removeDeletedTablesAndFieldsFromSearchTableConfigs(extensionConfiguration.searchTables);
+        const sanitizedSearchTableConfigs = removeDeletedTablesAndFieldsFromSearchTableConfigs(extensionConfiguration.searchTables);
         if (sanitizedSearchTableConfigs.deletionOccurred) {
-            extensionConfiguration.searchTables = sanitizedSearchTableConfigs.newSearchTableConfigs;
+            extensionConfiguration.searchTables = sanitizedSearchTableConfigs.searchTableConfigs;
         }
 
         return extensionConfiguration;
     }
-
-    removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableConfigs: SearchTableConfig[]):
-        { deletionOccurred: true, newSearchTableConfigs: SearchTableConfig[] } | { deletionOccurred: false } => {
-        let deletionOccurred = false;
-        const newSearchTableConfigs = searchTableConfigs
-            .filter(searchTable => {
-                if (searchTable.table.isDeleted) {
-                    deletionOccurred = true;
-                    return false;
-                }
-                return true;
-            })
-            .map(searchTable => {
-                const newSearchFields = searchTable.searchFields.filter(searchField => {
-                    if (searchField.isDeleted) {
-                        deletionOccurred = true;
-                        return false;
-                    }
-                    return true;
-                });
-
-                const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
-                for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
-                    if (indexField !== undefined && indexField.isDeleted) {
-                        deletionOccurred = true;
-                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
-                    } else {
-                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
-                    }
-                }
-
-                return {
-                    ...searchTable,
-                    searchFields: newSearchFields,
-                    intelliSearchIndexFields: newIntelliSearchIndexFields
-                };
-            });
-
-        if (deletionOccurred) {
-            return {deletionOccurred: true, newSearchTableConfigs: newSearchTableConfigs};
-        }
-        return {deletionOccurred: false};
-    };
 
 }

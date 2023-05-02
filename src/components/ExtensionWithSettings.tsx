@@ -206,7 +206,9 @@ export function ExtensionWithSettings({
                             extensionConfiguration={extensionConfig}
                             isPremiumUser={premiumStatus === 'premium'}
                             transactionIsProcessing={transactionIsProcessing}
-                            setTransactionIsProcessing={setTransactionIsProcessing}/>
+                            setTransactionIsProcessing={setTransactionIsProcessing}
+                            base={base}
+                        />
                     </Suspense>
                 </TabPanel>
             </Box>

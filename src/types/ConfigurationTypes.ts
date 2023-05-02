@@ -45,4 +45,10 @@ export type AIProviderOptions = {
     embeddingModelSelectOptions: { value: string, label: string }[],
 }
 
+export type SearchTableConfigWithDefinedSearchIndexField = {
+    table: Table,
+    searchFields: Field[],
+    intelliSearchIndexField: Field,
+}
+
 export type GlobalConfigUpdateResult = { errorsOccurred: false, } | { errorsOccurred: true, errorMessage: string }

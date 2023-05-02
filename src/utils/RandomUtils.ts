@@ -1,4 +1,5 @@
 import {Id, toast} from "react-toastify";
+import {AIProviderName, SearchTableConfig} from "../types/ConfigurationTypes";
 
 export function mapValues<T extends object, V>(obj: T, valueMapper: (k: keyof T, v: T[keyof T]) => V) {
     return Object.fromEntries(
@@ -22,7 +23,7 @@ export const generateRandomPositiveInteger = (): number => Math.floor(Math.rando
 * Thus, it may be helpful in some cases to give the user some feedback that they should fix their internet connection and that they may need
 *  to refresh the browser and retry the operation (so that they're not just left hanging for 4 minutes even after network connection is restored).
 */
-export const asyncAirtableOperationWrapper = <T>(asyncAirtableOperation: () => Promise<T>, triggerPoorNetworkConnectionToastMessage: () => Id, defaultDelayUntilToastMessageTriggered= 20000): Promise<T> => {
+export const asyncAirtableOperationWrapper = <T>(asyncAirtableOperation: () => Promise<T>, triggerPoorNetworkConnectionToastMessage: () => Id, defaultDelayUntilToastMessageTriggered = 20000): Promise<T> => {
     return new Promise((resolve, reject) => {
         let toastId: Id | undefined = undefined;
         const timeout = setTimeout(() => {
@@ -49,3 +50,43 @@ export const changeLoadingToastToErrorToast = (errorMessage: string, toastId: Id
         closeButton: true
     });
 }
+
+export const removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableConfigs: SearchTableConfig[]):
+    { deletionOccurred: boolean, searchTableConfigs: SearchTableConfig[] } => {
+    let deletionOccurred = false;
+    const newSearchTableConfigs = searchTableConfigs
+        .filter(searchTable => {
+            if (searchTable.table.isDeleted) {
+                deletionOccurred = true;
+                return false;
+            }
+            return true;
+        })
+        .map(searchTable => {
+            const newSearchFields = searchTable.searchFields.filter(searchField => {
+                if (searchField.isDeleted) {
+                    deletionOccurred = true;
+                    return false;
+                }
+                return true;
+            });
+
+            const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
+            for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
+                if (indexField !== undefined && indexField.isDeleted) {
+                    deletionOccurred = true;
+                    newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
+                } else {
+                    newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
+                }
+            }
+
+            return {
+                ...searchTable,
+                searchFields: newSearchFields,
+                intelliSearchIndexFields: newIntelliSearchIndexFields
+            };
+        });
+
+    return {deletionOccurred: deletionOccurred, searchTableConfigs: searchTableConfigs};
+};
