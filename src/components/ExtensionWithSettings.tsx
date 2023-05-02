@@ -129,13 +129,14 @@ export function ExtensionWithSettings({
     const base = useBase();
     const globalConfig = useGlobalConfig();
 
-    const globalConfigSettingsService = new GlobalConfigSettingsService(globalConfig);
+    const globalConfigSettingsService = new GlobalConfigSettingsService(globalConfig, base);
+
+    const extensionConfig: ExtensionConfiguration | undefined = globalConfigSettingsService.getExtensionConfigurationFromGlobalConfig();
 
     const [premiumUpdatePending, setPremiumUpdatePending] = useState(false);
     const [configurationUpdatePending, setConfigurationUpdatePending] = useState(false);
     const [transactionIsProcessing, setTransactionIsProcessing] = useState<boolean>(false);
 
-    const extensionConfig = globalConfig.get('extensionConfiguration') as ExtensionConfiguration | undefined;
     const premiumLicense: string | undefined = (globalConfig.get('premiumLicense') as string | undefined);
     const premiumLicenseDefined: boolean = premiumLicense !== undefined;
     const [premiumStatus, setPremiumStatus] = useState<PremiumStatus>(premiumLicenseDefined ? 'premium' : 'free');
@@ -176,7 +177,10 @@ export function ExtensionWithSettings({
             if (!updatePending) setTabIndex(index);
         }}>
             <TabList>
-                <Tab>🔎 <TabText text='Search'/></Tab>
+                <Tab>
+                    <TabIcon iconName='search'/>
+                    <TabText text='Search'/>
+                </Tab>
                 <Tab>
                     <TabIcon iconName="cog"/>
                     <TabText text='Settings'/>
@@ -209,6 +213,7 @@ export function ExtensionWithSettings({
             <TabPanel>
                 <Settings
                     base={base}
+                    extensionConfiguration={extensionConfig}
                     globalConfigSettingsService={globalConfigSettingsService}
                     configurationUpdatePending={configurationUpdatePending}
                     setConfigurationUpdatePending={setConfigurationUpdatePending}/>

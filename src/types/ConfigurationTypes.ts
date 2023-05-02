@@ -41,6 +41,7 @@ export type SerializableSearchTableConfig = {
 
 export type AIProviderOptions = {
     prettyName: string,
+    indexFieldName: string,
     embeddingModelSelectOptions: { value: string, label: string }[],
 }
 

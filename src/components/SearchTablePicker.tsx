@@ -4,7 +4,8 @@ import {Box, Button, ConfirmationDialog, FieldIcon, Select, Switch, Text} from "
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import {Toast} from "./Toast";
 import {toast} from "react-toastify";
-import {SearchTableConfig} from "../types/ConfigurationTypes";
+import {AIProviderOptions, SearchTableConfig} from "../types/ConfigurationTypes";
+import {aiProviderData} from "../types/Constants";
 
 export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
     setSearchTables: (searchTables: (prevSearchTables: SearchTableConfig[]) => SearchTableConfig[]) => void,
@@ -57,8 +58,15 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                     <FormFieldLabelWithTooltip fieldLabel='Searchable Fields*'
                                                fieldLabelTooltip="Select fields that you'd like the IntelliSearch AI to know about."/>
                     <Box display='flex' flexWrap='wrap' marginTop={2}>
-                        {newSearchTable.fields.map((field, index) =>
-                            <Box key={index} margin={1}>
+                        {newSearchTable.fields.map((field, index) => {
+
+                            for (const [,aiProviderOptions] of Object.entries(aiProviderData)) {
+                                if (field.name === aiProviderOptions.indexFieldName) {
+                                    return <></>;
+                                }
+                            }
+
+                            return <Box key={index} margin={1}>
                                 <Switch
                                     label={<><Box display='inline'><FieldIcon position='relative' top='3px'
                                                                               field={field}
@@ -73,7 +81,8 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                                         }
                                     }}
                                 />
-                            </Box>)}
+                            </Box>;
+                        })}
                     </Box>
                     <Text marginTop={3} marginLeft={2} size='small' textColor='gray'>* Adding unnecessary fields to the
                         search
@@ -111,6 +120,7 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
             />}
         <Button
             margin={3}
+            maxWidth='300px'
             onClick={() => setAddTableDialogOpen(true)}
             icon="plus"
         >

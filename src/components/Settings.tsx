@@ -29,6 +29,7 @@ import {useImmer} from "use-immer";
 import {SearchTablePicker} from "./SearchTablePicker";
 import {Toast} from "./Toast";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
+import {aiProviderData, defaultConfig} from "../types/Constants";
 
 loadCSSFromString(`
 .settings-container {
@@ -65,42 +66,12 @@ loadCSSFromString(`
 }
 `)
 
-const defaultConfig: ExtensionConfiguration = {
-    currentAiProvider: 'openai',
-    aiProvidersConfiguration: {
-        openai: {
-            apiKey: '',
-            embeddingModel: 'text-embedding-ada-002',
-            otherSettings: {},
-        },
-        cohere: {
-            apiKey: '',
-            embeddingModel: 'large',
-            otherSettings: {},
-        }
-    },
-    searchTables: [],
-}
-
-const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
-    openai: {
-        prettyName: 'OpenAI',
-        embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
-    },
-    cohere: {
-        prettyName: 'Cohere',
-        embeddingModelSelectOptions: [{value: 'large', label: 'large'}, {
-            value: 'small',
-            label: 'small'
-        }, {value: 'multilingual-22-12', label: 'multilingual-22-12'}]
-    },
-}
-
 const attemptConfigUpdateAndShowToast = (
     extensionConfiguration: ExtensionConfiguration,
     toastContainerId: { containerId: Id },
     setConfigurationUpdatePending: (pending: boolean) => void,
-    globalConfigSettingsService: GlobalConfigSettingsService
+    globalConfigSettingsService: GlobalConfigSettingsService,
+    setSearchTableConfigs: (searchTableConfigs: SearchTableConfig[]) => void
 ) => {
     setConfigurationUpdatePending(true);
 
@@ -112,7 +83,10 @@ const attemptConfigUpdateAndShowToast = (
                 changeLoadingToastToErrorToast(configurationUpdateResult.errorMessage, configurationUpdateToastId, toastContainerId);
             } else {
 
-                // TODO: Fetch the new configuration from the global config and update the state with it
+                const extensionConfiguration = globalConfigSettingsService.getExtensionConfigurationFromGlobalConfig();
+                if (extensionConfiguration) {
+                    setSearchTableConfigs(extensionConfiguration.searchTables);
+                }
 
                 toast.update(configurationUpdateToastId, {
                     render: 'Configuration saved successfully!',
@@ -146,71 +120,29 @@ export const Settings = ({
 
     const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(extensionConfiguration ? extensionConfiguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
     const [aiProviderName, setAiProviderName] = useState(extensionConfiguration ? extensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
-    const [searchTables, setSearchTables] = useImmer(extensionConfiguration ? extensionConfiguration.searchTables : defaultConfig.searchTables);
+    const [searchTableConfigs, setSearchTableConfigs] = useImmer(extensionConfiguration ? extensionConfiguration.searchTables : defaultConfig.searchTables);
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
 
     const newExtensionConfigurationToSave: ExtensionConfiguration = {
         currentAiProvider: aiProviderName,
         aiProvidersConfiguration: aiProvidersConfiguration,
-        searchTables: searchTables,
+        searchTables: searchTableConfigs,
     }
 
-    const getSanitizedSearchTableConfigs = (): { deletionOccurred: true, newSearchTableConfigs: SearchTableConfig[] } | { deletionOccurred: false } => {
-        let deletionOccurred = false;
-        const newSearchTableConfigs = searchTables
-            .filter(searchTable => {
-                if (searchTable.table.isDeleted) {
-                    deletionOccurred = true;
-                    return false;
-                }
-                return true;
-            })
-            .map(searchTable => {
-                const newSearchFields = searchTable.searchFields.filter(searchField => {
-                    if (searchField.isDeleted) {
-                        deletionOccurred = true;
-                        return false;
-                    }
-                    return true;
-                });
-
-                const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
-                for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
-                    if (indexField !== undefined && indexField.isDeleted) {
-                        deletionOccurred = true;
-                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
-                    } else {
-                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
-                    }
-                }
-
-                return {
-                    ...searchTable,
-                    searchFields: newSearchFields,
-                    intelliSearchIndexFields: newIntelliSearchIndexFields
-                };
-            });
-
-        if (deletionOccurred) {
-            return {deletionOccurred: true, newSearchTableConfigs: newSearchTableConfigs};
-        }
-        return {deletionOccurred: false};
-    };
-
-    const sanitizeSearchTableConfigs = getSanitizedSearchTableConfigs()
+    const sanitizeSearchTableConfigs = globalConfigSettingsService.removeDeletedTablesAndFieldsFromSearchTableConfigs(searchTableConfigs)
     if (sanitizeSearchTableConfigs.deletionOccurred) {
-        setSearchTables(sanitizeSearchTableConfigs.newSearchTableConfigs);
+        setSearchTableConfigs(sanitizeSearchTableConfigs.newSearchTableConfigs);
     }
 
     const removeSearchTable = (searchTablesIndex: number) => {
-        setSearchTables(searchTables => {
+        setSearchTableConfigs(searchTables => {
             searchTables.splice(searchTablesIndex, 1);
         });
     }
 
     return <>
         <Box className='settings-container'>
-            <Box border='default' padding={3} className='ai-config-container'>
+            <Box padding={3} display='flex' flexDirection='column' alignItems='center' maxWidth='500px' className='ai-config-container'>
                 <Heading size='small' marginBottom={3}>AI Configuration</Heading>
 
                 <FormField label="Select Your AI Provider">
@@ -259,11 +191,11 @@ export const Settings = ({
                 </details>
             </Box>
 
-            <Box maxWidth='1000px' marginTop={4} border='default' padding={3}>
+            <Box display='flex' alignItems='center' flexDirection='column' maxWidth='1000px' marginTop={4} padding={3}>
                 <Heading size='small'>Searchable Tables</Heading>
 
-                <Box display='flex' flexWrap='wrap'>
-                    {searchTables.map((searchTableConfig, index) =>
+                <Box display='flex' flexWrap='wrap' justifyContent='center'>
+                    {searchTableConfigs.map((searchTableConfig, index) =>
                         <Box margin={3} border='default' key={index} padding={3} display='flex'
                              flexDirection='column'
                              justifyContent='space-between'>
@@ -275,14 +207,17 @@ export const Settings = ({
                                 <Heading marginTop={3} size='xsmall'>Searchable Fields:</Heading>
                                 {(searchTableConfig.searchFields).length !== 0 &&
                                     searchTableConfig.searchFields.map((searchField, index) =>
-                                        <Box marginLeft={3}><FieldIcon position='relative' top='3px'
-                                                                       field={searchField}
-                                                                       size={16}/> <Text
-                                            display='inline-block'>{searchField.name}</Text></Box>)
+                                        <Box key={index} marginLeft={3}>
+                                            <FieldIcon
+                                                position='relative'
+                                                top='3px'
+                                                field={searchField}
+                                                size={16}/> <Text display='inline-block'>{searchField.name}</Text>
+                                        </Box>)
                                 }
                             </Box>
 
-                            <Box>
+                            <Box borderBottom='solid' borderColor='lightgray' paddingBottom={4}>
                                 <Heading marginTop={3} size='xsmall'>IntelliSearch Index Field: <Tooltip
                                     content="This field will be used to store AI-generated search data."
                                     placementX={Tooltip.placements.CENTER}
@@ -292,10 +227,10 @@ export const Settings = ({
                                 <Box marginLeft={3}>
                                     {(searchTableConfig.intelliSearchIndexFields[aiProviderName] !== undefined)
                                         ? <Text>
-                                            ✅ {aiProviderData[aiProviderName].prettyName} index field already created.
+                                            ✅ {aiProviderData[aiProviderName].prettyName} Index field created.
                                         </Text>
                                         : <Text>
-                                            ❌ {aiProviderData[aiProviderName].prettyName} index field not yet
+                                            ⚠️ {aiProviderData[aiProviderName].prettyName} Index field not yet
                                             created. <br/>
                                             Save configuration to create field.
                                         </Text>
@@ -306,17 +241,20 @@ export const Settings = ({
                                     onClick={() => removeSearchTable(index)}>Remove</Button>
                         </Box>)}
                 </Box>
-                <SearchTablePicker searchTables={searchTables} setSearchTables={setSearchTables} base={base}/>
+                <SearchTablePicker searchTables={searchTableConfigs} setSearchTables={setSearchTableConfigs}
+                                   base={base}/>
             </Box>
 
 
             <Button
+                size='large'
                 maxWidth='200px'
-                marginTop={4}
+                margin='auto'
                 disabled={configurationUpdatePending} variant='primary'
                 onClick={() => attemptConfigUpdateAndShowToast(newExtensionConfigurationToSave, manualConfigurationToastId,
                     setConfigurationUpdatePending,
-                    globalConfigSettingsService
+                    globalConfigSettingsService,
+                    setSearchTableConfigs,
                 )}>
                 {configurationUpdatePending
                     ? <Loader scale={0.2} fillColor='white'/>

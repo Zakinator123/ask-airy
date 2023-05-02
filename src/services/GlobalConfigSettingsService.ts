@@ -7,13 +7,16 @@ import {
     SerializableSearchTableConfig
 } from "../types/ConfigurationTypes";
 import {GlobalConfig} from "@airtable/blocks/types";
-import {Field, FieldType} from "@airtable/blocks/models";
+import {Base, Field, FieldType} from "@airtable/blocks/models";
+import {aiProviderData} from "../types/Constants";
 
 export class GlobalConfigSettingsService {
     private globalConfig: GlobalConfig;
+    private base: Base;
 
-    constructor(globalConfig: GlobalConfig) {
+    constructor(globalConfig: GlobalConfig, base: Base) {
         this.globalConfig = globalConfig;
+        this.base = base;
     }
 
     validateExtensionConfigUpdateAndSaveToGlobalConfig = async (extensionConfiguration: ExtensionConfiguration): Promise<GlobalConfigUpdateResult> => {
@@ -47,7 +50,7 @@ export class GlobalConfigSettingsService {
             let searchIndexField = searchTableConfig.intelliSearchIndexFields[aiProvider];
 
             if (!searchIndexField) {
-                const previouslyCreatedSearchIndexField = searchTableConfig.table.getFieldByNameIfExists(`IntelliSearch ${aiProvider} Index`);
+                const previouslyCreatedSearchIndexField = searchTableConfig.table.getFieldByNameIfExists(aiProviderData[aiProvider].indexFieldName);
                 if (previouslyCreatedSearchIndexField) {
                     searchIndexField = previouslyCreatedSearchIndexField;
                 } else {
@@ -60,7 +63,7 @@ export class GlobalConfigSettingsService {
 
                     try {
                         searchIndexField = await searchTableConfig.table.createFieldAsync(
-                            `IntelliSearch ${aiProvider} Index`,
+                            aiProviderData[aiProvider].indexFieldName,
                             FieldType.MULTILINE_TEXT,
                             null,
                             'This field is used by the IntelliSearch Extension to store search index data for each record.'
@@ -128,5 +131,92 @@ export class GlobalConfigSettingsService {
             }
         }
     }
+
+    getExtensionConfigurationFromGlobalConfig = (): ExtensionConfiguration | undefined => {
+        const serializableExtensionConfiguration = this.globalConfig.get('extensionConfiguration') as SerializableExtensionConfiguration | undefined;
+
+        if (!serializableExtensionConfiguration) return undefined;
+
+        const extensionConfiguration: ExtensionConfiguration = {
+            currentAiProvider: serializableExtensionConfiguration.currentAiProvider,
+            aiProvidersConfiguration: serializableExtensionConfiguration.aiProvidersConfiguration,
+            searchTables: []
+        }
+
+        for (const serializableSearchTableConfig of serializableExtensionConfiguration.searchTables) {
+            const searchTable = this.base.getTableByIdIfExists(serializableSearchTableConfig.table);
+            if (!searchTable) continue;
+
+            const searchFields: Field[] = serializableSearchTableConfig.searchFields
+                .map(fieldId => searchTable.getFieldByIdIfExists(fieldId))
+                .filter((field): field is Field => field !== null);
+
+            if (searchFields.length === 0) continue;
+
+            const intelliSearchIndexFields = Object.entries(serializableSearchTableConfig.intelliSearchIndexFields).reduce((acc, [aiProvider, fieldId]) => {
+                const field = searchTable.getFieldByIdIfExists(fieldId);
+                if (field) {
+                    acc[aiProvider as AIProviderName] = field;
+                }
+                return acc;
+            }, {} as Record<AIProviderName, Field>);
+
+            extensionConfiguration.searchTables.push({
+                table: searchTable,
+                searchFields,
+                intelliSearchIndexFields
+            });
+        }
+
+        const sanitizedSearchTableConfigs = this.removeDeletedTablesAndFieldsFromSearchTableConfigs(extensionConfiguration.searchTables);
+        if (sanitizedSearchTableConfigs.deletionOccurred) {
+            extensionConfiguration.searchTables = sanitizedSearchTableConfigs.newSearchTableConfigs;
+        }
+
+        return extensionConfiguration;
+    }
+
+    removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableConfigs: SearchTableConfig[]):
+        { deletionOccurred: true, newSearchTableConfigs: SearchTableConfig[] } | { deletionOccurred: false } => {
+        let deletionOccurred = false;
+        const newSearchTableConfigs = searchTableConfigs
+            .filter(searchTable => {
+                if (searchTable.table.isDeleted) {
+                    deletionOccurred = true;
+                    return false;
+                }
+                return true;
+            })
+            .map(searchTable => {
+                const newSearchFields = searchTable.searchFields.filter(searchField => {
+                    if (searchField.isDeleted) {
+                        deletionOccurred = true;
+                        return false;
+                    }
+                    return true;
+                });
+
+                const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
+                for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
+                    if (indexField !== undefined && indexField.isDeleted) {
+                        deletionOccurred = true;
+                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
+                    } else {
+                        newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
+                    }
+                }
+
+                return {
+                    ...searchTable,
+                    searchFields: newSearchFields,
+                    intelliSearchIndexFields: newIntelliSearchIndexFields
+                };
+            });
+
+        if (deletionOccurred) {
+            return {deletionOccurred: true, newSearchTableConfigs: newSearchTableConfigs};
+        }
+        return {deletionOccurred: false};
+    };
 
 }
