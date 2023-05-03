@@ -3,11 +3,11 @@ import React from "react";
 import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {Search} from "./Search";
-import {RateLimiter} from "../utils/RateLimiter";
 import {SemanticSearchService} from "../services/SemanticSearchService";
 import {OpenAIEmbeddingService} from "../services/EmbeddingService";
 import {Base} from "@airtable/blocks/models";
 import {removeDeletedTablesAndFieldsFromSearchTableConfigs} from "../utils/RandomUtils";
+import {RequestRateLimiter} from "../utils/RequestRateLimiter";
 
 loadCSSFromString(`
 .centered-container {
@@ -97,8 +97,11 @@ const SearchWrapper = ({
         : <Search
             semanticSearchService={
                 new SemanticSearchService(
-                    new OpenAIEmbeddingService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey),
-                    new AirtableMutationService(new RateLimiter(10, 5)))}
+                    new OpenAIEmbeddingService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
+                        extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
+                        1000,
+                        100000),
+                    new AirtableMutationService(new RequestRateLimiter(10, 5)))}
             searchTableConfigs={validatedSearchTableConfigs.configs}
             base={base}
         />

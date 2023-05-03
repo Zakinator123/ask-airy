@@ -5,7 +5,7 @@ export type AIProviderName = "openai" | "cohere";
 
 export type AiProvidersConfiguration = Record<AIProviderName, {
     apiKey: string,
-    embeddingModel: string,
+    embeddingModel: OpenAIEmbeddingModel,
     otherSettings: {},
 }>
 
@@ -50,5 +50,7 @@ export type SearchTableConfigWithDefinedSearchIndexField = {
     searchFields: Field[],
     intelliSearchIndexField: Field,
 }
+
+export type OpenAIEmbeddingModel = 'text-embedding-ada-002';
 
 export type GlobalConfigUpdateResult = { errorsOccurred: false, } | { errorsOccurred: true, errorMessage: string }

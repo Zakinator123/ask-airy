@@ -1,4 +1,4 @@
-import {RateLimiter} from "../utils/RateLimiter";
+import {RequestRateLimiter} from "../utils/RequestRateLimiter";
 import {Table} from "@airtable/blocks/models";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
 import {ObjectMap} from "@airtable/blocks/dist/types/src/private_utils";
@@ -6,10 +6,10 @@ import {FieldId} from "@airtable/blocks/dist/types/src/types/field";
 import {RecordToUpdate} from "../types/OtherTypes";
 
 export class AirtableMutationService {
-    private readonly _rateLimiter: RateLimiter;
+    private readonly _rateLimiter: RequestRateLimiter;
     private readonly BATCH_SIZE = 50;
 
-    constructor(rateLimiter: RateLimiter) {
+    constructor(rateLimiter: RequestRateLimiter) {
         this._rateLimiter = rateLimiter;
     }
 

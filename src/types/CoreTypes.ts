@@ -37,3 +37,16 @@ export type RecordToIndex = {
     newHash: string
     serializedDataToEmbed: string,
 }
+
+export type RequestWithTokensToBeRateLimited<T> = {
+    request: () => Promise<T>,
+    numTokensInRequest: number
+}
+
+export type AIServiceError = {
+    errorStatus?: any
+    errorResponse?: any
+    errorMessage?: any
+}
+
+export type EmbeddingsResponse = Array<RecordIndexData> | AIServiceError;

@@ -4,7 +4,7 @@ import TestDriver from '@airtable/blocks-testing';
 import {render, screen} from '@testing-library/react';
 import {basicTestFixture} from './basic-test-fixture';
 import {ExtensionWithSettings} from "../src/components/ExtensionWithSettings";
-import {RateLimiter} from "../src/utils/RateLimiter";
+import {RequestRateLimiter} from "../src/utils/RequestRateLimiter";
 import {AirtableMutationService} from "../src/services/AirtableMutationService";
 import {GumroadLicenseVerificationService} from "../src/services/LicenseVerificationService";
 import userEvent from '@testing-library/user-event'
@@ -16,7 +16,7 @@ describe('ExtensionWithSettings', () => {
     beforeEach(() => {
         testDriver = new TestDriver(basicTestFixture);
 
-        const rateLimiter = new RateLimiter(15, 1000);
+        const rateLimiter = new RequestRateLimiter(15, 1000);
         const airtableMutationService = new AirtableMutationService(rateLimiter);
         const licenseVerificationService = new GumroadLicenseVerificationService();
 

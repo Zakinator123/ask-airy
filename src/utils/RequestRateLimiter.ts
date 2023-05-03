@@ -1,4 +1,4 @@
-export class RateLimiter {
+export class RequestRateLimiter {
     private readonly _maxRequests;
     private readonly _interval;
     private fnQueue: Array<() => Promise<any>> = [];

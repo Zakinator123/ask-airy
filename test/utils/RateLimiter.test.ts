@@ -1,12 +1,12 @@
 import {beforeEach, describe, expect, it} from '@jest/globals';
-import {RateLimiter} from "../../src/utils/RateLimiter";
+import {RequestRateLimiter} from "../../src/utils/RequestRateLimiter";
 
 describe('RateLimiter', () => {
 
-    let rateLimiter: RateLimiter;
+    let rateLimiter: RequestRateLimiter;
 
     beforeEach(() => {
-        rateLimiter = new RateLimiter(15, 1000);
+        rateLimiter = new RequestRateLimiter(15, 1000);
     });
 
     it('Rate limiter should execute 5 requests immediately', () => {
@@ -42,7 +42,7 @@ describe('RateLimiter', () => {
     });
 
     it('Rate limiter should execute 50 requests rate limited at 15 requests per second.', () => {
-        rateLimiter = new RateLimiter(15, 1000);
+        rateLimiter = new RequestRateLimiter(15, 1000);
         const startTime = Date.now();
 
         const rateLimitedRequestPromises = [];

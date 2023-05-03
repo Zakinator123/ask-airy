@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@airtable/blocks": "1.17.0",
+    "@dqbd/tiktoken": "^1.0.7",
     "hash-wasm": "^4.9.0",
     "heap-js": "^2.2.0",
     "openai": "^3.2.1",
