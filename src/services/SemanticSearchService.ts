@@ -25,6 +25,8 @@ export class SemanticSearchService implements SearchService {
             recordsToIndex = await this.getStaleRecordsInSearchIndex(searchTable);
         }
 
+        console.log(`Updating ${recordsToIndex.length} records in search index`);
+
         if (recordsToIndex.length !== 0) {
             console.log(`Updating ${recordsToIndex.length} records in search index`);
             const recordEmbeddings: RecordIndexData[] = await this.embeddingsService.getEmbeddingsForRecords(recordsToIndex);

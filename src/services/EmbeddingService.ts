@@ -7,7 +7,6 @@ import {
     RecordToIndex,
     RequestWithTokensToBeRateLimited
 } from "../types/CoreTypes";
-import {encoding_for_model} from "@dqbd/tiktoken";
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
 
@@ -32,14 +31,13 @@ export class OpenAIEmbeddingService implements EmbeddingService {
     getEmbeddingsForRecords = async (recordsToEmbed: Array<RecordToIndex>): Promise<Array<RecordIndexData>> => {
 
         type RecordToIndexWithTokensCounted = RecordToIndex & { numTokensInRequest: number };
-        const enc = encoding_for_model(this.embeddingModel);
 
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToEmbed.map((recordToEmbed) => {
-            const tokens = enc.encode(recordToEmbed.serializedDataToEmbed);
-            console.log(tokens.length);
+            const numTokens = recordToEmbed.serializedDataToEmbed.length/4;
+            console.log(`Tokens in request ${numTokens}`);
             return {
                 ...recordToEmbed,
-                numTokensInRequest: tokens.length
+                numTokensInRequest: numTokens
             }
         });
 
@@ -67,29 +65,29 @@ export class OpenAIEmbeddingService implements EmbeddingService {
 
         const embeddingsRequestsToBeRateLimited: Array<RequestWithTokensToBeRateLimited<EmbeddingsResponse>> =
             embeddingsRequests.map((embeddingsRequest) => ({
-            request: async () : Promise<RecordIndexData[] | AIServiceError> => {
-                try {
-                    const embeddingResponse = await this.openai.createEmbedding(
-                        {
-                            model: this.embeddingModel,
-                            input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => recordToEmbed.serializedDataToEmbed),
-                        });
+                request: async (): Promise<RecordIndexData[] | AIServiceError> => {
+                    try {
+                        const embeddingResponse = await this.openai.createEmbedding(
+                            {
+                                model: this.embeddingModel,
+                                input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => recordToEmbed.serializedDataToEmbed),
+                            });
 
-                    return embeddingResponse.data.data.map(({embedding, index}) => ({
-                        recordId: embeddingsRequest.recordsToEmbed[index]!.recordId,
-                        hash: embeddingsRequest.recordsToEmbed[index]!.newHash,
-                        embedding: embedding
-                    }));
-                } catch (error: any) {
-                    return {
-                        errorStatus: error?.response?.status,
-                        errorResponse: error?.response?.data,
-                        errorMessage: error?.message
+                        return embeddingResponse.data.data.map(({embedding, index}) => ({
+                            recordId: embeddingsRequest.recordsToEmbed[index]!.recordId,
+                            hash: embeddingsRequest.recordsToEmbed[index]!.newHash,
+                            embedding: embedding
+                        }));
+                    } catch (error: any) {
+                        return {
+                            errorStatus: error?.response?.status,
+                            errorResponse: error?.response?.data,
+                            errorMessage: error?.message
+                        }
                     }
-                }
-            },
-            numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
-        }));
+                },
+                numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
+            }));
 
         const embeddingsRequestsToBeRateLimitedResponses: Array<EmbeddingsResponse> = await Promise.all(
             embeddingsRequestsToBeRateLimited.map(
