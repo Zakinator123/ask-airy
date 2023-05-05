@@ -1,5 +1,7 @@
 import {Id, toast} from "react-toastify";
 import {AIProviderName, SearchTableConfig} from "../types/ConfigurationTypes";
+import {Record} from "@airtable/blocks/models";
+import {SearchTableSchema} from "../types/CoreTypes";
 
 export function mapValues<T extends object, V>(obj: T, valueMapper: (k: keyof T, v: T[keyof T]) => V) {
     return Object.fromEntries(
@@ -90,3 +92,20 @@ export const removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableCo
 
     return {deletionOccurred: deletionOccurred, searchTableConfigs: searchTableConfigs};
 };
+
+export const serializeRecord = (record: Record, {searchFields, intelliSearchIndexField}: Omit<SearchTableSchema, 'table'>) =>
+    searchFields.reduce((serializedRecordData, currentField) => {
+        const fieldValue = record.getCellValueAsString(currentField.id);
+        if (fieldValue !== '' && currentField.id !== intelliSearchIndexField.id) {
+            return serializedRecordData + `${currentField.name} is ${fieldValue}. `;
+        }
+        return serializedRecordData;
+    }, '')
+
+export function cleanTemplateLiteral(str: string) {
+    return str
+        .split('\n')             // Split the string into an array of lines
+        .map(line => line.trim()) // Remove leading and trailing whitespace from each line
+        .filter(line => line)     // Remove empty lines
+        .join(' ');               // Join the lines back together with a single space
+}

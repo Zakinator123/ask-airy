@@ -205,8 +205,8 @@ export function ExtensionWithSettings({
                             airtableMutationService={airtableMutationService}
                             extensionConfiguration={extensionConfig}
                             isPremiumUser={premiumStatus === 'premium'}
-                            transactionIsProcessing={transactionIsProcessing}
-                            setTransactionIsProcessing={setTransactionIsProcessing}
+                            searchIsPending={transactionIsProcessing}
+                            setSearchIsPending={setTransactionIsProcessing}
                             base={base}
                         />
                     </Suspense>

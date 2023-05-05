@@ -2,7 +2,7 @@ import {xxhash64} from "hash-wasm";
 import {Record} from "@airtable/blocks/models";
 import Heap from "heap-js";
 import {
-    EmbeddingService,
+    AIService,
     RecordIndexData,
     RecordToIndex,
     SearchIndexData,
@@ -10,13 +10,14 @@ import {
     SearchTable
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
+import {serializeRecord} from "../utils/RandomUtils";
 
 export class SemanticSearchService implements SearchService {
-    private embeddingsService;
+    private aiService;
     private AirtableMutationService;
 
-    constructor(embeddingsService: EmbeddingService, AirtableMutationService: AirtableMutationService) {
-        this.embeddingsService = embeddingsService;
+    constructor(embeddingsService: AIService, AirtableMutationService: AirtableMutationService) {
+        this.aiService = embeddingsService;
         this.AirtableMutationService = AirtableMutationService;
     }
 
@@ -29,7 +30,7 @@ export class SemanticSearchService implements SearchService {
 
         if (recordsToIndex.length !== 0) {
             console.log(`Updating ${recordsToIndex.length} records in search index`);
-            const recordEmbeddings: RecordIndexData[] = await this.embeddingsService.getEmbeddingsForRecords(recordsToIndex);
+            const recordEmbeddings: RecordIndexData[] = await this.aiService.getEmbeddingsForRecords(recordsToIndex);
 
             await this.AirtableMutationService.updateRecordsInTableAsync(searchTable.table, recordEmbeddings.map(recordIndexData => (
                 {
@@ -55,13 +56,7 @@ export class SemanticSearchService implements SearchService {
         const startTime = performance.now();
 
         for (const record of recordsToSearch) {
-            const serializedDataToEmbed = searchFields.reduce((recordData, currentField) => {
-                const fieldValue = record.getCellValueAsString(currentField.id);
-                if (fieldValue !== '' && currentField.id !== intelliSearchIndexField.id) {
-                    return recordData + `${currentField.name} is ${fieldValue}. `;
-                }
-                return recordData;
-            }, '');
+            const serializedDataToEmbed = serializeRecord(record, {searchFields, intelliSearchIndexField});
             const newHash = await xxhash64(serializedDataToEmbed, 420, 6969);
 
             const currentRecordSearchIndexData = record.getCellValueAsString(intelliSearchIndexField.id);
@@ -90,20 +85,22 @@ export class SemanticSearchService implements SearchService {
                                                intelliSearchIndexField,
                                                searchFields,
                                                recordsToSearch,
+                                               table
                                            }: SearchTable,
-                                           query: string, numResults: number): Promise<Record[]> => {
-        const embeddedQuery = await this.embeddingsService.getEmbeddingForString(query);
+                                           query: string, numResults: number): Promise<{aiAnswer: string ,relevantRecords: Record[]}> => {
+        const hypotheticalSearchResults = await this.aiService.getHypotheticalSearchResultGivenUserQuery({intelliSearchIndexField, searchFields, table}, query);
+
+        const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSearchResults);
 
         const performance = window.performance;
         const startTime = performance.now();
 
         const heap = new Heap<[number, Record]>((a, b) => a[0] - b[0]);
-        ///
         for (const record of recordsToSearch) {
             const searchIndexData = JSON.parse(record.getCellValue(intelliSearchIndexField.id) as string) as SearchIndexData;
             const dotProduct = this.computeDotProduct(embeddedQuery, searchIndexData.embedding);
 
-            if (heap.size() < numResults) {
+            if (heap.size() < 1000) {
                 heap.push([dotProduct, record]);
             } else if (dotProduct > heap.peek()![0]) {
                 heap.pop();
@@ -119,6 +116,32 @@ export class SemanticSearchService implements SearchService {
             .sort((a, b) => b[0] - a[0])
             .map(recordWithDotProduct => recordWithDotProduct[1]);
 
-        return topKSearchResults;
+        // Map topKSearchResults into simple JSON objects
+
+        const serializedRecords = topKSearchResults.map(record =>
+            JSON.stringify({
+                recordId: record.name,
+                fields: searchFields.map(field => {
+                    return {
+                        fieldName: field.name,
+                        fieldValue: record.getCellValueAsString(field.id)
+                    }
+                })
+            }))
+
+        const relevantSerializedRecordsThatCanFitInContextWindow = [];
+         let totalNumTokens = 0;
+        for (const record of serializedRecords) {
+            const numTokens = record.length/4;
+            if (totalNumTokens + numTokens <= 1000) {
+                relevantSerializedRecordsThatCanFitInContextWindow.push(record);
+                totalNumTokens += numTokens;
+            }
+        }
+
+        return {
+            aiAnswer: await this.aiService.answerQueryGivenRelevantAirtableContext(query, {intelliSearchIndexField, searchFields, table}, relevantSerializedRecordsThatCanFitInContextWindow),
+            relevantRecords: topKSearchResults.slice(0, 10)
+        };
     }
 }

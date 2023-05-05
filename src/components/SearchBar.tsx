@@ -2,16 +2,22 @@ import React, {useState} from "react";
 import {Button, Input, useRecords} from "@airtable/blocks/ui";
 import {SearchService, SearchTable} from "../types/CoreTypes";
 import {Record} from "@airtable/blocks/models";
-import {AIProviderName, SearchTableConfigWithDefinedSearchIndexField} from "../types/ConfigurationTypes";
+import {SearchTableConfigWithDefinedSearchIndexField} from "../types/ConfigurationTypes";
 
 
 export const SearchBar = ({
+                              searchIsPending,
+                              setSearchIsPending,
                               semanticSearchService,
                               searchTableConfig,
+                              setSearchAnswer,
                               setSearchResults,
                           }: {
+    searchIsPending: boolean,
+    setSearchIsPending: (pending: boolean) => void,
     semanticSearchService: SearchService,
     searchTableConfig: SearchTableConfigWithDefinedSearchIndexField,
+    setSearchAnswer: (answer: string) => void,
     setSearchResults: (results: Record[]) => void,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -25,10 +31,13 @@ export const SearchBar = ({
     }
 
     const executeSearch = async () => {
+        setSearchIsPending(true);
         await semanticSearchService.updateSearchIndexForTable(searchTable);
         const results = await semanticSearchService.executeSemanticSearchForTable(searchTable, searchQuery, 5);
-        console.log(results);
-        setSearchResults(results);
+        console.log(results.relevantRecords);
+        setSearchResults(results.relevantRecords);
+        setSearchAnswer(results.aiAnswer);
+        setSearchIsPending(false);
     }
 
     return <>
@@ -38,5 +47,6 @@ export const SearchBar = ({
             placeholder="Search Query"
         />
         <Button variant='primary' onClick={executeSearch}>Search</Button>
+        {searchIsPending && <p>Searching...</p>}
     </>
 }

@@ -4,7 +4,7 @@ import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {Search} from "./Search";
 import {SemanticSearchService} from "../services/SemanticSearchService";
-import {OpenAIEmbeddingService} from "../services/EmbeddingService";
+import {OpenAIService} from "../services/OpenAIService";
 import {Base} from "@airtable/blocks/models";
 import {removeDeletedTablesAndFieldsFromSearchTableConfigs} from "../utils/RandomUtils";
 import {RequestRateLimiter} from "../utils/RequestRateLimiter";
@@ -75,16 +75,16 @@ const SearchWrapper = ({
                            airtableMutationService,
                            extensionConfiguration,
                            isPremiumUser,
-                           transactionIsProcessing,
-                           setTransactionIsProcessing,
+                           searchIsPending,
+                           setSearchIsPending,
                            base
                        }:
                            {
                                airtableMutationService: AirtableMutationService,
                                extensionConfiguration: ExtensionConfiguration | undefined,
                                isPremiumUser: boolean,
-                               transactionIsProcessing: boolean,
-                               setTransactionIsProcessing: (processing: boolean) => void,
+                               searchIsPending: boolean,
+                               setSearchIsPending: (pending: boolean) => void,
                                base: Base
                            }) => {
 
@@ -95,9 +95,11 @@ const SearchWrapper = ({
             <Text>{validatedSearchTableConfigs.errorMessage}</Text>
         </Box>
         : <Search
+            searchIsPending={searchIsPending}
+            setSearchIsPending={setSearchIsPending}
             semanticSearchService={
                 new SemanticSearchService(
-                    new OpenAIEmbeddingService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
+                    new OpenAIService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
                         extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
                         1000,
                         100000),

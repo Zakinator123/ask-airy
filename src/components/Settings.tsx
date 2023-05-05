@@ -18,7 +18,7 @@ import {Base} from "@airtable/blocks/models";
 import {
     AIProviderName,
     AIProviderOptions,
-    ExtensionConfiguration,
+    ExtensionConfiguration, OpenAIEmbeddingModel,
     SearchTableConfig,
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
@@ -186,7 +186,7 @@ export const Settings = ({
                                 value={aiProvidersConfiguration[aiProviderName].embeddingModel}
                                 onChange={newValue => {
                                     setAiProvidersConfiguration(aiProvidersConfiguration => {
-                                        aiProvidersConfiguration[aiProviderName].embeddingModel = newValue as string
+                                        aiProvidersConfiguration[aiProviderName].embeddingModel = newValue as OpenAIEmbeddingModel;
                                     });
                                 }}
                             />
@@ -254,6 +254,7 @@ export const Settings = ({
                 size='large'
                 maxWidth='200px'
                 margin='auto'
+                marginBottom={4}
                 disabled={configurationUpdatePending} variant='primary'
                 onClick={() => attemptConfigUpdateAndShowToast(newExtensionConfigurationToSave, manualConfigurationToastId,
                     setConfigurationUpdatePending,
