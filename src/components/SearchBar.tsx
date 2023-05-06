@@ -44,9 +44,9 @@ export const SearchBar = ({
         <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search Query"
+            placeholder="Ask the AI anything about your table..."
         />
-        <Button variant='primary' onClick={executeSearch}>Search</Button>
+        <Button variant='primary' onClick={executeSearch}>Ask the AI</Button>
         {searchIsPending && <p>Searching...</p>}
     </>
 }

@@ -116,32 +116,36 @@ export class SemanticSearchService implements SearchService {
             .sort((a, b) => b[0] - a[0])
             .map(recordWithDotProduct => recordWithDotProduct[1]);
 
-        // Map topKSearchResults into simple JSON objects
-
         const serializedRecords = topKSearchResults.map(record =>
             JSON.stringify({
-                recordId: record.name,
-                fields: searchFields.map(field => {
-                    return {
+                recordName: record.name,
+                fields: searchFields.reduce((acc, field) => {
+                    const fieldValue = record.getCellValueAsString(field.id)
+                    if (fieldValue === '' || field.isPrimaryField) return acc;
+                    acc.push({
                         fieldName: field.name,
-                        fieldValue: record.getCellValueAsString(field.id)
-                    }
-                })
+                        fieldValue: fieldValue
+                    })
+                    return acc;
+                }, [] as { fieldName: string, fieldValue: string }[])
             }))
 
         const relevantSerializedRecordsThatCanFitInContextWindow = [];
          let totalNumTokens = 0;
         for (const record of serializedRecords) {
             const numTokens = record.length/4;
-            if (totalNumTokens + numTokens <= 1000) {
+            if (totalNumTokens + numTokens <= 3000) {
                 relevantSerializedRecordsThatCanFitInContextWindow.push(record);
                 totalNumTokens += numTokens;
             }
         }
 
+        console.log("Relevant records that can fit in context window: ", relevantSerializedRecordsThatCanFitInContextWindow.length);
+
+        // TODO: Handle array bounds with heap and slicing
         return {
             aiAnswer: await this.aiService.answerQueryGivenRelevantAirtableContext(query, {intelliSearchIndexField, searchFields, table}, relevantSerializedRecordsThatCanFitInContextWindow),
-            relevantRecords: topKSearchResults.slice(0, 10)
+            relevantRecords: topKSearchResults.slice(0, 30)
         };
     }
 }

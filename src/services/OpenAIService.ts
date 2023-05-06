@@ -83,16 +83,16 @@ export class OpenAIService implements AIService {
         const messages: ChatCompletionRequestMessage[] = [
             {
                 role: "system",
-                content: cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries with the help of relevant tabular context data.
-                The queries can be search queries, or questions about the tabular context data. 
-                If the query is a question, you should respond with an answer to the question that is based on the relevant context data.
-                If the question does not seem to be answerable with the relevant context data, you should think step by step to see if you can infer an answer as best you can.
-                Any newlines in the response should be replaced with the html line break tag.`)
+                content: cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries.
+                You have access to a spreadsheet table that contains data that is potentially relevant to the user's query.
+                If the query is a question, you should respond concisely with an answer to the question that is based on the relevant context data.
+                If the relevant context data does not seem sufficient to answer the question, you should think step by step to see if you can infer an answer from the context data.
+                If you still cannot answer the query based on the context data, you may use your general knowledge to answer the question.`)
             },
             {
                 role: "user",
                 content: cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(searchTableSchema)}
-                Here is some relevant data from the table sorted from most relevant to least relevant formatted as JSON:
+                Here is some potentially relevant data from the table sorted from most relevant to least relevant formatted as JSON:
                 ${relevantContextData.join('\n')}}`)
             },
             {
@@ -105,7 +105,7 @@ export class OpenAIService implements AIService {
             const response = await this.openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
                 messages: messages,
-                max_tokens: 3500 - calculateTokensInChatCompletionMessages(messages),
+                max_tokens: 3900 - calculateTokensInChatCompletionMessages(messages),
                 temperature: 0.3,
                 top_p: 1,
                 n: 1,
