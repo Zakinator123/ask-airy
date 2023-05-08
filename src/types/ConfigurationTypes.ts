@@ -1,7 +1,7 @@
 import {Field, Table} from "@airtable/blocks/models";
 import {FieldId, TableId} from "@airtable/blocks/types";
 
-export type AIProviderName = "openai" | "cohere";
+export type AIProviderName = "openai";
 
 export type AiProvidersConfiguration = Record<AIProviderName, {
     apiKey: string,
@@ -26,7 +26,6 @@ export type SearchTableConfig = {
     searchFields: Field[],
     intelliSearchIndexFields: {
         openai?: Field,
-        cohere?: Field
     }
 }
 
@@ -35,7 +34,6 @@ export type SerializableSearchTableConfig = {
     searchFields: FieldId[],
     intelliSearchIndexFields: {
         openai?: FieldId,
-        cohere?: FieldId
     }
 }
 

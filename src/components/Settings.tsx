@@ -17,8 +17,8 @@ import {
 import {Base} from "@airtable/blocks/models";
 import {
     AIProviderName,
-    AIProviderOptions,
-    ExtensionConfiguration, OpenAIEmbeddingModel,
+    ExtensionConfiguration,
+    OpenAIEmbeddingModel,
     SearchTableConfig,
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
@@ -46,6 +46,7 @@ loadCSSFromString(`
     height: 100%;
     width: 100%;
     max-width: fit-content;
+    align-items: center;
 }
 
 @media only screen and (min-width: 600px) {
@@ -146,8 +147,14 @@ export const Settings = ({
 
     return <>
         <Box className='settings-container'>
-            <Box padding={3} display='flex' flexDirection='column' alignItems='center' maxWidth='500px ' className='ai-config-container'>
-                <Heading size='small' marginBottom={3}>AI Configuration</Heading>
+            <Box padding={3}
+                 display='flex'
+                 flexDirection='column'
+                 alignItems='center'
+                 maxWidth='420px'
+                 width='100%'
+                 className='ai-config-container'>
+                <Heading marginBottom={3}>AI Configuration</Heading>
 
                 <FormField label="Select Your AI Provider">
                     <SelectButtons
@@ -157,9 +164,6 @@ export const Settings = ({
                             [{
                                 value: "openai",
                                 label: `${aiProviderData["openai"].prettyName}`
-                            }, {
-                                value: "cohere",
-                                label: `${aiProviderData["cohere"].prettyName}`
                             }]}
                     />
                 </FormField>
@@ -195,12 +199,12 @@ export const Settings = ({
                 </details>
             </Box>
 
-            <Box display='flex' alignItems='center' flexDirection='column' maxWidth='1000px' marginTop={4} padding={3}>
-                <Heading size='small'>Searchable Tables</Heading>
+            <Box display='flex' alignItems='center' flexDirection='column' maxWidth='1000px' marginTop={2} padding={3}>
+                <Heading>Searchable Tables</Heading>
 
                 <Box display='flex' flexWrap='wrap' justifyContent='center'>
                     {searchTableConfigs.map((searchTableConfig, index) =>
-                        <Box margin={3} border='default' key={index} padding={3} display='flex'
+                        <Box maxWidth='350px' margin={3} border='default' key={index} padding={3} display='flex'
                              flexDirection='column'
                              justifyContent='space-between'>
                             <Box>
@@ -210,14 +214,16 @@ export const Settings = ({
                             <Box>
                                 <Heading marginTop={3} size='xsmall'>Searchable Fields:</Heading>
                                 {(searchTableConfig.searchFields).length !== 0 &&
-                                    searchTableConfig.searchFields.map((searchField, index) =>
+                                    <Box display='flex'
+                                         flexWrap='wrap'>{searchTableConfig.searchFields.map((searchField, index) =>
                                         <Box key={index} marginLeft={3}>
                                             <FieldIcon
                                                 position='relative'
                                                 top='3px'
                                                 field={searchField}
                                                 size={16}/> <Text display='inline-block'>{searchField.name}</Text>
-                                        </Box>)
+                                        </Box>)}
+                                    </Box>
                                 }
                             </Box>
 

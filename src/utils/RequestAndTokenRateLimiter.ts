@@ -1,6 +1,6 @@
 import {RequestWithTokensToBeRateLimited} from "../types/CoreTypes";
 
-export class RequestAndTokenRateLimiter<T> {
+export class RequestAndTokenRateLimiter {
     private readonly _maxRequests;
     private readonly _maxTokens;
     private readonly _maxRequestsAndTokensInterval;

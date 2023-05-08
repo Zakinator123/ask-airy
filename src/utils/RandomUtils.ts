@@ -90,7 +90,7 @@ export const removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableCo
             };
         });
 
-    return {deletionOccurred: deletionOccurred, searchTableConfigs: searchTableConfigs};
+    return {deletionOccurred: deletionOccurred, searchTableConfigs: newSearchTableConfigs};
 };
 
 export const serializeRecord = (record: Record, {searchFields, intelliSearchIndexField}: Omit<SearchTableSchema, 'table'>) =>

@@ -109,7 +109,6 @@ export const SearchTablePicker = ({setSearchTables, searchTables, base}: {
                             searchFields: newSearchTableFields,
                             intelliSearchIndexFields: {
                                 openai: undefined,
-                                cohere: undefined,
                             }
                         }]);
                         setNewSearchTable(undefined);

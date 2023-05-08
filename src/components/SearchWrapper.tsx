@@ -2,8 +2,8 @@ import {ExtensionConfiguration, SearchTableConfigWithDefinedSearchIndexField} fr
 import React from "react";
 import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
-import {Search} from "./Search";
-import {SemanticSearchService} from "../services/SemanticSearchService";
+import {AskAI} from "./AskAI";
+import {AskAIService} from "../services/AskAIService";
 import {OpenAIService} from "../services/OpenAIService";
 import {Base} from "@airtable/blocks/models";
 import {removeDeletedTablesAndFieldsFromSearchTableConfigs} from "../utils/RandomUtils";
@@ -94,11 +94,11 @@ const SearchWrapper = ({
         ? <Box className='centered-container'>
             <Text>{validatedSearchTableConfigs.errorMessage}</Text>
         </Box>
-        : <Search
-            searchIsPending={searchIsPending}
-            setSearchIsPending={setSearchIsPending}
-            semanticSearchService={
-                new SemanticSearchService(
+        : <AskAI
+            askAiIsPending={searchIsPending}
+            setAskAiIsPending={setSearchIsPending}
+            askAiService={
+                new AskAIService(
                     new OpenAIService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
                         extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
                         1000,

@@ -6,14 +6,6 @@ export const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
         indexFieldName: 'IntelliSearch OpenAI Index',
         embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
     },
-    cohere: {
-        prettyName: 'Cohere',
-        indexFieldName: 'IntelliSearch Cohere Index',
-        embeddingModelSelectOptions: [
-            {value: 'large', label: 'large'},
-            {value: 'small', label: 'small'},
-            {value: 'multilingual-22-12', label: 'multilingual-22-12'}]
-    },
 }
 
 export const defaultConfig: ExtensionConfiguration = {
@@ -24,11 +16,6 @@ export const defaultConfig: ExtensionConfiguration = {
             embeddingModel: 'text-embedding-ada-002',
             otherSettings: {},
         },
-        cohere: {
-            apiKey: '',
-            embeddingModel: 'large',
-            otherSettings: {},
-        }
     },
     searchTables: [],
 }

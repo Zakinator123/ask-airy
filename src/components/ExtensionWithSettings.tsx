@@ -172,14 +172,14 @@ export function ExtensionWithSettings({
 
     return <Box className='container'>
         <Toast containerId='topLevelToast'/>
-        <Heading size='xlarge'><SearchIcon/>  &nbsp; IntelliSearch</Heading>
+        <Heading size='xlarge'><SearchIcon/>  &nbsp; Ask AI</Heading>
         <Tabs selectedIndex={tabIndex} onSelect={(index: number) => {
             if (!updatePending) setTabIndex(index);
         }}>
             <TabList>
                 <Tab>
-                    <TabIcon iconName='search'/>
-                    <TabText text='Search'/>
+                    <TabIcon iconName='bolt'/>
+                    <TabText text='Ask AI'/>
                 </Tab>
                 <Tab>
                     <TabIcon iconName="cog"/>

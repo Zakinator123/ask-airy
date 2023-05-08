@@ -2,17 +2,19 @@ import {xxhash64} from "hash-wasm";
 import {Record} from "@airtable/blocks/models";
 import Heap from "heap-js";
 import {
+    AIPowerPreference,
     AIService,
+    AITableQueryResponse,
+    AskAIServiceInterface,
     RecordIndexData,
     RecordToIndex,
     SearchIndexData,
-    SearchService,
     SearchTable
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecord} from "../utils/RandomUtils";
 
-export class SemanticSearchService implements SearchService {
+export class AskAIService implements AskAIServiceInterface {
     private aiService;
     private AirtableMutationService;
 
@@ -87,10 +89,18 @@ export class SemanticSearchService implements SearchService {
                                                recordsToSearch,
                                                table
                                            }: SearchTable,
-                                           query: string, numResults: number): Promise<{aiAnswer: string ,relevantRecords: Record[]}> => {
-        const hypotheticalSearchResults = await this.aiService.getHypotheticalSearchResultGivenUserQuery({intelliSearchIndexField, searchFields, table}, query);
+                                           query: string, numResults: number, aiPowerPreference: AIPowerPreference): Promise<Record[]> => {
 
-        const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSearchResults);
+        let semanticSearchQuery = query;
+        if (aiPowerPreference === 'powerful') {
+            semanticSearchQuery = await this.aiService.getHypotheticalSearchResultGivenUserQuery({
+                intelliSearchIndexField,
+                searchFields,
+                table
+            }, query);
+        }
+
+        const embeddedQuery = await this.aiService.getEmbeddingForString(semanticSearchQuery);
 
         const performance = window.performance;
         const startTime = performance.now();
@@ -116,7 +126,18 @@ export class SemanticSearchService implements SearchService {
             .sort((a, b) => b[0] - a[0])
             .map(recordWithDotProduct => recordWithDotProduct[1]);
 
-        const serializedRecords = topKSearchResults.map(record =>
+        return topKSearchResults;
+    }
+
+
+    askAIAboutRelevantRecords = async ({
+                                           intelliSearchIndexField,
+                                           recordsToSearch,
+                                           searchFields,
+                                           table
+                                       }: SearchTable, query: string, relevantRecords: Record[], aiPowerPreference: AIPowerPreference): Promise<AITableQueryResponse> => {
+
+        const serializedRecords = relevantRecords.map(record =>
             JSON.stringify({
                 recordName: record.name,
                 fields: searchFields.reduce((acc, field) => {
@@ -130,22 +151,17 @@ export class SemanticSearchService implements SearchService {
                 }, [] as { fieldName: string, fieldValue: string }[])
             }))
 
-        const relevantSerializedRecordsThatCanFitInContextWindow = [];
-         let totalNumTokens = 0;
-        for (const record of serializedRecords) {
-            const numTokens = record.length/4;
-            if (totalNumTokens + numTokens <= 3000) {
-                relevantSerializedRecordsThatCanFitInContextWindow.push(record);
-                totalNumTokens += numTokens;
-            }
-        }
-
-        console.log("Relevant records that can fit in context window: ", relevantSerializedRecordsThatCanFitInContextWindow.length);
-
         // TODO: Handle array bounds with heap and slicing
-        return {
-            aiAnswer: await this.aiService.answerQueryGivenRelevantAirtableContext(query, {intelliSearchIndexField, searchFields, table}, relevantSerializedRecordsThatCanFitInContextWindow),
-            relevantRecords: topKSearchResults.slice(0, 30)
-        };
+
+        return await this.aiService.answerQueryGivenRelevantAirtableContext(query, {
+            intelliSearchIndexField,
+            searchFields,
+            table
+        }, serializedRecords, aiPowerPreference)
+    };
+
+
+    askAIAboutAnything(query: string): Promise<string> {
+        return Promise.resolve("");
     }
 }

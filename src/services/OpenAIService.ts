@@ -1,7 +1,9 @@
 import {ChatCompletionRequestMessage, Configuration, OpenAIApi} from "openai";
 import {
+    AIPowerPreference,
     AIService,
     AIServiceError,
+    AITableQueryResponse,
     EmbeddingsResponse,
     RecordIndexData,
     RecordToIndex,
@@ -11,6 +13,7 @@ import {
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
 import {cleanTemplateLiteral} from "../utils/RandomUtils";
+import {OpenAI} from "openai-streams";
 
 
 const getTextualDescriptionOfTableSchema = ({
@@ -24,19 +27,36 @@ const getTextualDescriptionOfTableSchema = ({
 const calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
     messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 4), 0)
 
+type AIModelConfiguration = {
+    model: string,
+    maxContextWindowTokens: number,
+}
+
 export class OpenAIService implements AIService {
     private openai
     private readonly embeddingModel: OpenAIEmbeddingModel;
+    private readonly fastChatModelConfiguration: AIModelConfiguration;
+    private readonly powerfulChatModelConfiguration: AIModelConfiguration;
     private readonly _maxRequests: number;
     private readonly _maxTokens: number;
     private readonly requestAndTokenRateLimiter: RequestAndTokenRateLimiter<RecordIndexData>;
+    private readonly apiKey;
 
     constructor(apiKey: string,
                 embeddingModel: OpenAIEmbeddingModel,
                 _maxRequests: number,
-                _maxTokens: number) {
+                _maxTokens: number,) {
+        this.apiKey = apiKey;
         this.openai = new OpenAIApi(new Configuration({apiKey}));
         this.embeddingModel = embeddingModel;
+        this.fastChatModelConfiguration = {
+            model: "gpt-3.5-turbo",
+            maxContextWindowTokens: 2049
+        };
+        this.powerfulChatModelConfiguration = {
+            model: "gpt-3.5-turbo",
+            maxContextWindowTokens: 3900
+        }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
         this.requestAndTokenRateLimiter = new RequestAndTokenRateLimiter<RecordIndexData>(_maxRequests, 60000, _maxTokens);
@@ -78,22 +98,51 @@ export class OpenAIService implements AIService {
         }
     }
 
-    answerQueryGivenRelevantAirtableContext = async (query: string, searchTableSchema: SearchTableSchema, relevantContextData: string[]): Promise<string> => {
+    answerQueryGivenRelevantAirtableContext = async (query: string,
+                                                     searchTableSchema: SearchTableSchema,
+                                                     relevantContextData: string[],
+                                                     aiPowerPreference: AIPowerPreference):
+        Promise<AITableQueryResponse> => {
+
+        const aiModelConfiguration = aiPowerPreference === 'fast' ? this.fastChatModelConfiguration : this.powerfulChatModelConfiguration;
+        const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
+
+        const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries.
+                You have access to a spreadsheet table that contains data that is potentially relevant to the user's query.
+                If the query is a question, you should respond concisely with an answer to the question that is based on the relevant context data.
+                If the relevant context data does not seem sufficient to answer the question, you should think step by step to see if you can infer an answer from the context data.
+                If you still cannot answer the query based on the context data, you may use your general knowledge to answer the question.`);
+
+        const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(searchTableSchema)}
+                Here is some potentially relevant data from the table sorted from most relevant to least relevant formatted as JSON:`);
+
+        const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4) + 10;
+
+        // Parameterize this?
+        const tokensAllocatedForAIResponse = 1000;
+
+        const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
+
+        console.log(`numTokensAllowedForContext: ${numTokensAllowedForContext}`)
+
+        const relevantSerializedRecordsThatCanFitInContextWindow = [];
+        let totalNumTokens = 0;
+        for (const record of relevantContextData) {
+            const numTokens = record.length / 4;
+            if (totalNumTokens + numTokens <= numTokensAllowedForContext) {
+                relevantSerializedRecordsThatCanFitInContextWindow.push(record);
+                totalNumTokens += numTokens;
+            }
+        }
 
         const messages: ChatCompletionRequestMessage[] = [
             {
                 role: "system",
-                content: cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries.
-                You have access to a spreadsheet table that contains data that is potentially relevant to the user's query.
-                If the query is a question, you should respond concisely with an answer to the question that is based on the relevant context data.
-                If the relevant context data does not seem sufficient to answer the question, you should think step by step to see if you can infer an answer from the context data.
-                If you still cannot answer the query based on the context data, you may use your general knowledge to answer the question.`)
+                content: systemMessage
             },
             {
                 role: "user",
-                content: cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(searchTableSchema)}
-                Here is some potentially relevant data from the table sorted from most relevant to least relevant formatted as JSON:
-                ${relevantContextData.join('\n')}}`)
+                content: `${schemaContextMessage} ${relevantSerializedRecordsThatCanFitInContextWindow.join('\n')}}`
             },
             {
                 role: "user",
@@ -101,20 +150,43 @@ export class OpenAIService implements AIService {
             }
         ];
 
+
         try {
-            const response = await this.openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
+        const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
+            "chat",
+            {
                 messages: messages,
-                max_tokens: 3900 - calculateTokensInChatCompletionMessages(messages),
+                model: aiModelConfiguration.model,
+                max_tokens: tokensAllocatedForAIResponse,
                 temperature: 0.3,
                 top_p: 1,
-                n: 1,
-            });
+                n: 1
+            },
+            {
+                apiKey: this.apiKey,
+            }
+        )
+            // const response = await this.openai.createChatCompletion({
+            //     model: aiModelConfiguration.model,
+            //     messages: messages,
+            //     max_tokens: tokensAllocatedForAIResponse,
+            //     temperature: 0.3,
+            //     top_p: 1,
+            //     n: 1,
+            // });
 
-            return response.data.choices[0]!.message!.content!;
+            return {
+                errorOccurred: false,
+                aiResponse: streamedResponse,
+                numRelevantRecordsUsedByAI: relevantSerializedRecordsThatCanFitInContextWindow.length
+            };
         } catch (error: any) {
-            if (error && error.response) console.error(error.response.data);
-            return 'error';
+            if (error.response) {
+                console.error(error.response.data);
+                return {errorOccurred: true, message: `Error Message: ${error.response.data}`};
+            } else {
+                return {errorOccurred: true, message: `Error: ${error}`};
+            }
         }
     }
 
@@ -188,7 +260,7 @@ export class OpenAIService implements AIService {
             embeddingsRequestsToBeRateLimited.map(
                 embeddingRequestToBeRateLimited => this.requestAndTokenRateLimiter.returnRateAndTokenLimitedPromise(embeddingRequestToBeRateLimited)));
 
-        const nonErrorResponses = embeddingsRequestsToBeRateLimitedResponses.filter((embeddingRequestToBeRateLimitedResponse, index) => {
+        const nonErrorResponses = embeddingsRequestsToBeRateLimitedResponses.filter((embeddingRequestToBeRateLimitedResponse) => {
             if (!(embeddingRequestToBeRateLimitedResponse instanceof Array)) {
                 const errorMessage = `Error in embedding request:
                  Status: ${embeddingRequestToBeRateLimitedResponse.errorStatus}
