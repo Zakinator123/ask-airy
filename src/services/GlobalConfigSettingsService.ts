@@ -2,14 +2,14 @@ import {
     AIProviderName,
     ExtensionConfiguration,
     GlobalConfigUpdateResult,
-    SearchTableConfig,
+    AiryTableConfig,
     SerializableExtensionConfiguration,
-    SerializableSearchTableConfig
+    SerializableAiryTableConfig
 } from "../types/ConfigurationTypes";
 import {GlobalConfig} from "@airtable/blocks/types";
 import {Base, Field, FieldType} from "@airtable/blocks/models";
 import {aiProviderData} from "../types/Constants";
-import {removeDeletedTablesAndFieldsFromSearchTableConfigs} from "../utils/RandomUtils";
+import {removeDeletedTablesAndFieldsFromAiryTableConfigs} from "../utils/RandomUtils";
 
 export class GlobalConfigSettingsService {
     private globalConfig: GlobalConfig;
@@ -26,14 +26,14 @@ export class GlobalConfigSettingsService {
             errorMessage: 'You must enter an API key.'
         }
 
-        if (extensionConfiguration.searchTables.length === 0) return {
+        if (extensionConfiguration.airyTableConfigs.length === 0) return {
             errorsOccurred: true,
-            errorMessage: 'You must add at least one table to the IntelliSearch Index.'
+            errorMessage: 'You must make at least one table accessible to Airy.'
         }
 
-        if (extensionConfiguration.searchTables.some(searchTable => searchTable.searchFields.length === 0)) return {
+        if (extensionConfiguration.airyTableConfigs.some(airyTable => airyTable.fields.length === 0)) return {
             errorsOccurred: true,
-            errorMessage: 'You must add at least one search field to each table.'
+            errorMessage: 'You must allow at least one field in each table to be accessible to Airy.'
         }
 
         if (!this.globalConfig.hasPermissionToSet('extensionConfiguration')) {
@@ -43,36 +43,36 @@ export class GlobalConfigSettingsService {
             }
         }
 
-        type ProcessedSearchTable =
+        type ProcessedAiryTable =
             | { errorsOccurred: true; errorMessage: string }
-            | { errorsOccurred: false; serializableSearchTableConfig: SerializableSearchTableConfig };
+            | { errorsOccurred: false; serializableAiryTableConfig: SerializableAiryTableConfig };
 
-        async function processSearchTable(searchTableConfig: SearchTableConfig, aiProvider: AIProviderName): Promise<ProcessedSearchTable> {
-            let searchIndexField = searchTableConfig.intelliSearchIndexFields[aiProvider];
+        async function processAiryTables(airyTableConfig: AiryTableConfig, aiProvider: AIProviderName): Promise<ProcessedAiryTable> {
+            let airyDataIndexField = airyTableConfig.airyDataIndexFields[aiProvider];
 
-            if (!searchIndexField) {
-                const previouslyCreatedSearchIndexField = searchTableConfig.table.getFieldByNameIfExists(aiProviderData[aiProvider].indexFieldName);
-                if (previouslyCreatedSearchIndexField) {
-                    searchIndexField = previouslyCreatedSearchIndexField;
+            if (!airyDataIndexField) {
+                const previouslyCreatedAiryDataIndexField = airyTableConfig.table.getFieldByNameIfExists(aiProviderData[aiProvider].indexFieldName);
+                if (previouslyCreatedAiryDataIndexField) {
+                    airyDataIndexField = previouslyCreatedAiryDataIndexField;
                 } else {
-                    if (!searchTableConfig.table.hasPermissionToCreateField()) {
+                    if (!airyTableConfig.table.hasPermissionToCreateField()) {
                         return {
                             errorsOccurred: true,
-                            errorMessage: `Insufficient permissions to create index field in ${searchTableConfig.table.name}`
+                            errorMessage: `Insufficient permissions to create index field in ${airyTableConfig.table.name}`
                         };
                     }
 
                     try {
-                        searchIndexField = await searchTableConfig.table.createFieldAsync(
+                        airyDataIndexField = await airyTableConfig.table.createFieldAsync(
                             aiProviderData[aiProvider].indexFieldName,
                             FieldType.MULTILINE_TEXT,
                             null,
-                            'This field is used by the IntelliSearch Extension to store search index data for each record.'
+                            'This field is used by the Ask Airy Extension.'
                         );
                     } catch (e) {
                         return {
                             errorsOccurred: true,
-                            errorMessage: `Failed to create index field for ${searchTableConfig.table.name}`
+                            errorMessage: `Failed to create index field for ${airyTableConfig.table.name}`
                         };
                     }
                 }
@@ -80,46 +80,46 @@ export class GlobalConfigSettingsService {
 
             return {
                 errorsOccurred: false,
-                serializableSearchTableConfig: {
-                    table: searchTableConfig.table.id,
-                    searchFields: searchTableConfig.searchFields.map((field: Field) => field.id),
-                    intelliSearchIndexFields: {[aiProvider]: searchIndexField.id}
+                serializableAiryTableConfig: {
+                    tableId: airyTableConfig.table.id,
+                    airyFieldIds: airyTableConfig.fields.map((field: Field) => field.id),
+                    airyDataIndexFieldIds: {[aiProvider]: airyDataIndexField.id}
                 }
             };
         }
 
-        async function createIndexFieldsAndReturnSerializableSearchTableConfigs(searchTableConfigs: SearchTableConfig[], aiProvider: AIProviderName) {
-            const serializableSearchTableConfigs: SerializableSearchTableConfig[] = [];
+        async function createIndexFieldsAndReturnSerializableAiryTableConfigs(airyTableConfigs: AiryTableConfig[], aiProvider: AIProviderName) {
+            const serializableAiryTableConfigs: SerializableAiryTableConfig[] = [];
             const searchTableErrors: string[] = [];
 
-            for (const searchTable of searchTableConfigs) {
-                const processed = await processSearchTable(searchTable, aiProvider);
+            for (const searchTable of airyTableConfigs) {
+                const processed = await processAiryTables(searchTable, aiProvider);
                 if (processed.errorsOccurred) {
                     searchTableErrors.push(processed.errorMessage);
                 } else {
-                    serializableSearchTableConfigs.push(processed.serializableSearchTableConfig);
+                    serializableAiryTableConfigs.push(processed.serializableAiryTableConfig);
                 }
             }
 
-            return {serializableSearchTableConfigs, searchTableErrors};
+            return {serializableAiryTableConfigs: serializableAiryTableConfigs, airyTableErrors: searchTableErrors};
         }
 
         const {
-            serializableSearchTableConfigs,
-            searchTableErrors
-        } = await createIndexFieldsAndReturnSerializableSearchTableConfigs(extensionConfiguration.searchTables, extensionConfiguration.currentAiProvider);
+            serializableAiryTableConfigs,
+            airyTableErrors
+        } = await createIndexFieldsAndReturnSerializableAiryTableConfigs(extensionConfiguration.airyTableConfigs, extensionConfiguration.currentAiProvider);
 
-        if (searchTableErrors.length > 0) {
+        if (airyTableErrors.length > 0) {
             return {
                 errorsOccurred: true,
-                errorMessage: searchTableErrors.join('\n')
+                errorMessage: airyTableErrors.join('\n')
             }
         }
 
         const serializableExtensionConfiguration: SerializableExtensionConfiguration = {
             currentAiProvider: extensionConfiguration.currentAiProvider,
             aiProvidersConfiguration: extensionConfiguration.aiProvidersConfiguration,
-            searchTables: serializableSearchTableConfigs
+            airyTables: serializableAiryTableConfigs
         }
 
         try {
@@ -141,37 +141,37 @@ export class GlobalConfigSettingsService {
         const extensionConfiguration: ExtensionConfiguration = {
             currentAiProvider: serializableExtensionConfiguration.currentAiProvider,
             aiProvidersConfiguration: serializableExtensionConfiguration.aiProvidersConfiguration,
-            searchTables: []
+            airyTableConfigs: []
         }
 
-        for (const serializableSearchTableConfig of serializableExtensionConfiguration.searchTables) {
-            const searchTable = this.base.getTableByIdIfExists(serializableSearchTableConfig.table);
-            if (!searchTable) continue;
+        for (const serializableAiryTableConfig of serializableExtensionConfiguration.airyTables) {
+            const airyTable = this.base.getTableByIdIfExists(serializableAiryTableConfig.tableId);
+            if (!airyTable) continue;
 
-            const searchFields: Field[] = serializableSearchTableConfig.searchFields
-                .map(fieldId => searchTable.getFieldByIdIfExists(fieldId))
+            const airyFields: Field[] = serializableAiryTableConfig.airyFieldIds
+                .map(fieldId => airyTable.getFieldByIdIfExists(fieldId))
                 .filter((field): field is Field => field !== null);
 
-            if (searchFields.length === 0) continue;
+            if (airyFields.length === 0) continue;
 
-            const intelliSearchIndexFields = Object.entries(serializableSearchTableConfig.intelliSearchIndexFields).reduce((acc, [aiProvider, fieldId]) => {
-                const field = searchTable.getFieldByIdIfExists(fieldId);
+            const airyDataIndexFields = Object.entries(serializableAiryTableConfig.airyDataIndexFieldIds).reduce((acc, [aiProvider, fieldId]) => {
+                const field = airyTable.getFieldByIdIfExists(fieldId);
                 if (field) {
                     acc[aiProvider as AIProviderName] = field;
                 }
                 return acc;
             }, {} as Record<AIProviderName, Field>);
 
-            extensionConfiguration.searchTables.push({
-                table: searchTable,
-                searchFields,
-                intelliSearchIndexFields
+            extensionConfiguration.airyTableConfigs.push({
+                table: airyTable,
+                fields: airyFields,
+                airyDataIndexFields: airyDataIndexFields
             });
         }
 
-        const sanitizedSearchTableConfigs = removeDeletedTablesAndFieldsFromSearchTableConfigs(extensionConfiguration.searchTables);
-        if (sanitizedSearchTableConfigs.deletionOccurred) {
-            extensionConfiguration.searchTables = sanitizedSearchTableConfigs.searchTableConfigs;
+        const sanitizedAiryTableConfigs = removeDeletedTablesAndFieldsFromAiryTableConfigs(extensionConfiguration.airyTableConfigs);
+        if (sanitizedAiryTableConfigs.deletionOccurred) {
+            extensionConfiguration.airyTableConfigs = sanitizedAiryTableConfigs.airyTableConfigs;
         }
 
         return extensionConfiguration;

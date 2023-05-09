@@ -1,69 +1,68 @@
 import React from "react";
 import {Button, useRecords} from "@airtable/blocks/ui";
-import {AIPowerPreference, AskAIServiceInterface, SearchTable} from "../types/CoreTypes";
+import {AskAiryServiceInterface, AskAiryTable} from "../types/CoreTypes";
 import {Record} from "@airtable/blocks/models";
-import {SearchTableConfigWithDefinedSearchIndexField} from "../types/ConfigurationTypes";
+import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 
 
 export const AskAIButton = ({
-                                searchIsPending,
+                                askAiryIsPending,
                                 setStatusMessage,
                                 setNumRelevantRecordsUsedInAiAnswer,
-                                setAskAiIsPending,
-                                askAIService,
-                                searchTableConfig,
+                                setAskAiryIsPending,
+                                askAiryService,
+                                airyTableConfig,
                                 setAIResponse,
                                 setSearchResults,
-                                aiPowerPreference,
                                 query
                             }: {
-    searchIsPending: boolean,
+    askAiryIsPending: boolean,
     setStatusMessage: (message: string) => void,
     setNumRelevantRecordsUsedInAiAnswer: (numRecords: number) => void,
-    setAskAiIsPending: (pending: boolean) => void,
-    askAIService: AskAIServiceInterface,
-    searchTableConfig: SearchTableConfigWithDefinedSearchIndexField,
+    setAskAiryIsPending: (pending: boolean) => void,
+    askAiryService: AskAiryServiceInterface,
+    airyTableConfig: AiryTableConfigWithDefinedDataIndexField,
     setAIResponse: (response: ReadableStream | string | undefined) => void,
     setSearchResults: (results: Record[] | undefined) => void,
-    aiPowerPreference: AIPowerPreference,
     query: string
 }) => {
-    const records = useRecords(searchTableConfig.table);
+    const records = useRecords(airyTableConfig.table);
 
-    const searchTable: SearchTable = {
-        table: searchTableConfig.table,
-        recordsToSearch: records,
-        searchFields: searchTableConfig.searchFields,
-        intelliSearchIndexField: searchTableConfig.intelliSearchIndexField,
+    const airyTable: AskAiryTable = {
+        table: airyTableConfig.table,
+        recordsToAskAiryAbout: records,
+        airyFields: airyTableConfig.airyFields,
+        airyDataIndexField: airyTableConfig.dataIndexField,
     }
 
-    const executeSearch = async () => {
-        setAskAiIsPending(true);
+    const executeAskAiry = async () => {
+        setAskAiryIsPending(true);
         setAIResponse(undefined);
         setSearchResults(undefined);
         setStatusMessage('');
 
         setStatusMessage("Updating AI Data Index... This may take a while.")
-        await askAIService.updateSearchIndexForTable(searchTable);
+        await askAiryService.updateAiryIndexDataForTable(airyTable);
         setStatusMessage("Finding records relevant to your query...");
-        const relevantRecords = await askAIService.executeSemanticSearchForTable(searchTable, query, 5, aiPowerPreference);
+        // TODO: Make num results configurable
+        const relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5);
         setSearchResults(relevantRecords);
         setStatusMessage("Asking the AI...");
 
-        const aiResponse = await askAIService.askAIAboutRelevantRecords(searchTable, query, relevantRecords, aiPowerPreference);
+        const aiResponse = await askAiryService.askAiryAboutRelevantRecords(airyTable, query, relevantRecords);
         setStatusMessage('');
         if (aiResponse.errorOccurred) {
             setAIResponse(aiResponse.message);
-            setAskAiIsPending(false);
+            setAskAiryIsPending(false);
         } else {
             setAIResponse(aiResponse.aiResponse);
             setNumRelevantRecordsUsedInAiAnswer(aiResponse.numRelevantRecordsUsedByAI);
         }
     }
 
-    return <Button disabled={searchIsPending || query.length === 0}
+    return <Button disabled={askAiryIsPending || query.length === 0}
                    variant='primary'
-                   onClick={executeSearch}>
+                   onClick={executeAskAiry}>
         Ask AI
     </Button>
 }

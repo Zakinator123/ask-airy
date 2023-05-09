@@ -1,11 +1,11 @@
 <h1 align="center">
-  <a href="https://github.com/Zakinator123/intellisearch">
-  <img src="assets/magnifying-glass.svg" alt="Magnifying Glass" width="100" height="100">
+  <a href="https://github.com/Zakinator123/ask-airy">
+  <img src="assets/airy.svg" alt="Magnifying Glass" width="100" height="100">
   </a>
 </h1>
 <div align="center">
-  <h1>IntelliSearch</h1>
-Search your Airtable base with AI.
+  <h1>Ask Airy</h1>
+Ask an AI anything about your Airtable Base.
   <br />
 
 <div align="center">

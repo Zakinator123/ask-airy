@@ -4,7 +4,7 @@ import {Settings} from "./Settings";
 import {ExtensionConfiguration,} from "../types/ConfigurationTypes";
 // @ts-ignore
 import {Tab, TabList, TabPanel, Tabs} from 'react-tabs';
-import SearchWrapper from "./SearchWrapper";
+import AskAiryWrapper from "./AskAiryWrapper";
 import {About} from "./About";
 import {Premium} from "./Premium";
 import {AirtableMutationService} from "../services/AirtableMutationService";
@@ -13,7 +13,7 @@ import {GumroadLicenseVerificationService} from "../services/LicenseVerification
 import {toast} from "react-toastify";
 import {Toast} from "./Toast";
 import {PremiumStatus} from "../types/OtherTypes";
-import {SearchIcon} from "./SearchIcon";
+import {AskAiryIcon} from "./AskAiryIcon";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 
 loadCSSFromString(`
@@ -172,14 +172,14 @@ export function ExtensionWithSettings({
 
     return <Box className='container'>
         <Toast containerId='topLevelToast'/>
-        <Heading size='xlarge'><SearchIcon/>  &nbsp; Ask AI</Heading>
+        <Heading size='xlarge'><AskAiryIcon/>  &nbsp; Ask Airy</Heading>
         <Tabs selectedIndex={tabIndex} onSelect={(index: number) => {
             if (!updatePending) setTabIndex(index);
         }}>
             <TabList>
                 <Tab>
                     <TabIcon iconName='bolt'/>
-                    <TabText text='Ask AI'/>
+                    <TabText text='Ask Airy'/>
                 </Tab>
                 <Tab>
                     <TabIcon iconName="cog"/>
@@ -201,12 +201,12 @@ export function ExtensionWithSettings({
                         <Box className='tab-loading-state'>
                             <Loader scale={0.5} fillColor='#888'/>
                         </Box>}>
-                        <SearchWrapper
+                        <AskAiryWrapper
                             airtableMutationService={airtableMutationService}
                             extensionConfiguration={extensionConfig}
                             isPremiumUser={premiumStatus === 'premium'}
-                            searchIsPending={transactionIsProcessing}
-                            setSearchIsPending={setTransactionIsProcessing}
+                            askAiryIsPending={transactionIsProcessing}
+                            setAskAiryIsPending={setTransactionIsProcessing}
                             base={base}
                         />
                     </Suspense>

@@ -2,19 +2,18 @@ import {xxhash64} from "hash-wasm";
 import {Record} from "@airtable/blocks/models";
 import Heap from "heap-js";
 import {
-    AIPowerPreference,
     AIService,
     AITableQueryResponse,
-    AskAIServiceInterface,
+    AskAiryServiceInterface,
     RecordIndexData,
     RecordToIndex,
-    SearchIndexData,
-    SearchTable
+    AiryIndexData,
+    AskAiryTable
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecord} from "../utils/RandomUtils";
 
-export class AskAIService implements AskAIServiceInterface {
+export class AskAiryService implements AskAiryServiceInterface {
     private aiService;
     private AirtableMutationService;
 
@@ -23,22 +22,22 @@ export class AskAIService implements AskAIServiceInterface {
         this.AirtableMutationService = AirtableMutationService;
     }
 
-    updateSearchIndexForTable = async (searchTable: SearchTable, recordsToIndex?: Array<RecordToIndex>): Promise<void> => {
+    updateAiryIndexDataForTable = async (airyTable: AskAiryTable, recordsToIndex?: Array<RecordToIndex>): Promise<void> => {
         if (recordsToIndex === undefined) {
-            recordsToIndex = await this.getStaleRecordsInSearchIndex(searchTable);
+            recordsToIndex = await this.getRecordsWithStaleAiryIndexData(airyTable);
         }
 
-        console.log(`Updating ${recordsToIndex.length} records in search index`);
+        console.log(`Updating ${recordsToIndex.length} records in index`);
 
         if (recordsToIndex.length !== 0) {
-            console.log(`Updating ${recordsToIndex.length} records in search index`);
+            console.log(`Updating ${recordsToIndex.length} records in index`);
             const recordEmbeddings: RecordIndexData[] = await this.aiService.getEmbeddingsForRecords(recordsToIndex);
 
-            await this.AirtableMutationService.updateRecordsInTableAsync(searchTable.table, recordEmbeddings.map(recordIndexData => (
+            await this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, recordEmbeddings.map(recordIndexData => (
                 {
                     id: recordIndexData.recordId,
                     fields: {
-                        [searchTable.intelliSearchIndexField.id]: JSON.stringify({
+                        [airyTable.airyDataIndexField.id]: JSON.stringify({
                             hash: recordIndexData.hash,
                             embedding: recordIndexData.embedding
                         })
@@ -47,27 +46,27 @@ export class AskAIService implements AskAIServiceInterface {
         }
     }
 
-    getStaleRecordsInSearchIndex = async ({
-                                              intelliSearchIndexField,
-                                              searchFields,
-                                              recordsToSearch
-                                          }: SearchTable): Promise<Array<RecordToIndex>> => {
+    getRecordsWithStaleAiryIndexData = async ({
+                                              airyDataIndexField,
+                                              airyFields,
+                                              recordsToAskAiryAbout
+                                          }: AskAiryTable): Promise<Array<RecordToIndex>> => {
         const recordsToUpdate: RecordToIndex[] = [];
 
         const performance = window.performance;
         const startTime = performance.now();
 
-        for (const record of recordsToSearch) {
-            const serializedDataToEmbed = serializeRecord(record, {searchFields, intelliSearchIndexField});
+        for (const record of recordsToAskAiryAbout) {
+            const serializedDataToEmbed = serializeRecord(record, {airyFields: airyFields, airyDataIndexField: airyDataIndexField});
             const newHash = await xxhash64(serializedDataToEmbed, 420, 6969);
 
-            const currentRecordSearchIndexData = record.getCellValueAsString(intelliSearchIndexField.id);
-            if (currentRecordSearchIndexData === '') {
+            const currentRecordAiryIndexData = record.getCellValueAsString(airyDataIndexField.id);
+            if (currentRecordAiryIndexData === '') {
                 recordsToUpdate.push({recordId: record.id, newHash, serializedDataToEmbed});
             } else {
                 // TODO: Handle error here if parsing fails
-                const searchIndexDataForRecord: SearchIndexData = JSON.parse(currentRecordSearchIndexData);
-                if (newHash !== searchIndexDataForRecord.hash) {
+                const airyIndexDataForRecords: AiryIndexData = JSON.parse(currentRecordAiryIndexData);
+                if (newHash !== airyIndexDataForRecords.hash) {
                     recordsToUpdate.push({recordId: record.id, newHash, serializedDataToEmbed});
                 }
             }
@@ -75,7 +74,7 @@ export class AskAIService implements AskAIServiceInterface {
 
         const endTime = performance.now();
         const elapsedTime = endTime - startTime;
-        console.log(`Elapsed time for getting stale search index records: ${elapsedTime} milliseconds`);
+        console.log(`Elapsed time for getting stale airy data index records: ${elapsedTime} milliseconds`);
 
         return recordsToUpdate;
     }
@@ -84,31 +83,28 @@ export class AskAIService implements AskAIServiceInterface {
         a.map((x, i) => a[i]! * b[i]!).reduce((m, n) => m + n);
 
     executeSemanticSearchForTable = async ({
-                                               intelliSearchIndexField,
-                                               searchFields,
-                                               recordsToSearch,
+                                               airyDataIndexField,
+                                               airyFields,
+                                               recordsToAskAiryAbout,
                                                table
-                                           }: SearchTable,
-                                           query: string, numResults: number, aiPowerPreference: AIPowerPreference): Promise<Record[]> => {
+                                           }: AskAiryTable,
+                                           query: string, numResults: number): Promise<Record[]> => {
 
-        let semanticSearchQuery = query;
-        if (aiPowerPreference === 'powerful') {
-            semanticSearchQuery = await this.aiService.getHypotheticalSearchResultGivenUserQuery({
-                intelliSearchIndexField,
-                searchFields,
+        const hypotheticalSemanticSearchResult = await this.aiService.getHypotheticalSearchResultGivenUserQuery({
+                airyDataIndexField: airyDataIndexField,
+                airyFields: airyFields,
                 table
             }, query);
-        }
 
-        const embeddedQuery = await this.aiService.getEmbeddingForString(semanticSearchQuery);
+        const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSemanticSearchResult);
 
         const performance = window.performance;
         const startTime = performance.now();
 
         const heap = new Heap<[number, Record]>((a, b) => a[0] - b[0]);
-        for (const record of recordsToSearch) {
-            const searchIndexData = JSON.parse(record.getCellValue(intelliSearchIndexField.id) as string) as SearchIndexData;
-            const dotProduct = this.computeDotProduct(embeddedQuery, searchIndexData.embedding);
+        for (const record of recordsToAskAiryAbout) {
+            const airyIndexData = JSON.parse(record.getCellValue(airyDataIndexField.id) as string) as AiryIndexData;
+            const dotProduct = this.computeDotProduct(embeddedQuery, airyIndexData.embedding);
 
             if (heap.size() < 1000) {
                 heap.push([dotProduct, record]);
@@ -130,17 +126,17 @@ export class AskAIService implements AskAIServiceInterface {
     }
 
 
-    askAIAboutRelevantRecords = async ({
-                                           intelliSearchIndexField,
-                                           recordsToSearch,
-                                           searchFields,
+    askAiryAboutRelevantRecords = async ({
+                                           airyDataIndexField,
+                                           recordsToAskAiryAbout,
+                                           airyFields,
                                            table
-                                       }: SearchTable, query: string, relevantRecords: Record[], aiPowerPreference: AIPowerPreference): Promise<AITableQueryResponse> => {
+                                       }: AskAiryTable, query: string, relevantRecords: Record[]): Promise<AITableQueryResponse> => {
 
         const serializedRecords = relevantRecords.map(record =>
             JSON.stringify({
                 recordName: record.name,
-                fields: searchFields.reduce((acc, field) => {
+                fields: airyFields.reduce((acc, field) => {
                     const fieldValue = record.getCellValueAsString(field.id)
                     if (fieldValue === '' || field.isPrimaryField) return acc;
                     acc.push({
@@ -154,14 +150,14 @@ export class AskAIService implements AskAIServiceInterface {
         // TODO: Handle array bounds with heap and slicing
 
         return await this.aiService.answerQueryGivenRelevantAirtableContext(query, {
-            intelliSearchIndexField,
-            searchFields,
+            airyDataIndexField: airyDataIndexField,
+            airyFields: airyFields,
             table
-        }, serializedRecords, aiPowerPreference)
+        }, serializedRecords)
     };
 
 
-    askAIAboutAnything(query: string): Promise<string> {
+    askAiryAboutAnything(query: string): Promise<string> {
         return Promise.resolve("");
     }
 }

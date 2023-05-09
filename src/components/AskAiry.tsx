@@ -14,9 +14,9 @@ import {
     Tooltip
 } from "@airtable/blocks/ui";
 import {Base, Record, Table} from "@airtable/blocks/models";
-import {AskAIServiceInterface} from "../types/CoreTypes";
+import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAIButton} from "./AskAIButton";
-import {SearchTableConfigWithDefinedSearchIndexField} from "../types/ConfigurationTypes";
+import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import useReadableStream from "../utils/UseReadableStream";
 
@@ -37,32 +37,25 @@ function StreamedAIResponse({aiResponse, setAskAIPending}: {
     return <Box padding={2}>{dataWithNewlines}</Box>
 }
 
-type AIPowerPreferenceOptions = { label: 'Fast'; value: 'fast' } | { label: 'Powerful'; value: 'powerful' }
-const aiPowerOptions: AIPowerPreferenceOptions[] = [
-    {value: "powerful", label: "Powerful"},
-    {value: "fast", label: "Fast"},
-];
-
-export const AskAI = ({
+export const AskAiry = ({
                           askAiIsPending,
                           setAskAiIsPending,
                           askAiService,
-                          searchTableConfigs,
+                          airyTableConfigs,
                           base
                       }: {
     askAiIsPending: boolean,
     setAskAiIsPending: (pending: boolean) => void,
-    askAiService: AskAIServiceInterface,
-    searchTableConfigs: SearchTableConfigWithDefinedSearchIndexField[],
+    askAiService: AskAiryServiceInterface,
+    airyTableConfigs: AiryTableConfigWithDefinedDataIndexField[],
     base: Base
 }) => {
-    const [tableToSearch, setTableToSearch] = useState<Table | undefined>(undefined);
+    const [table, setTable] = useState<Table | undefined>(undefined);
     const [searchResults, setSearchResults] = useState<Record[] | undefined>(undefined);
     const [statusMessage, setStatusMessage] = useState<string>('');
-    const [AIResponse, setAIResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
-    const [numRelevantRecordsUsedInAiAnswer, setNumRelevantRecordsUsedInAiAnswer] = useState<number>(0);
+    const [AiryResponse, setAiryResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
+    const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
-    const [aiPowerPreference, setAiPowerPreference] = useState(aiPowerOptions[0]!.value);
 
     return (
         <Box style={{
@@ -75,30 +68,19 @@ export const AskAI = ({
             width: '100%'
         }}>
             <Box>
-                <FormField label='What do you want to ask the AI about?'>
+                <FormField label='What do you want to ask Airy about?'>
                     <Select
                         disabled={askAiIsPending}
-                        options={searchTableConfigs.map(searchTableConfig => ({
-                            value: searchTableConfig.table.id,
-                            label: searchTableConfig.table.name
+                        options={airyTableConfigs.map(airyTableConfig => ({
+                            value: airyTableConfig.table.id,
+                            label: airyTableConfig.table.name
                         }))}
-                        value={tableToSearch && tableToSearch.id}
+                        value={table && table.id}
                         onChange={(tableId) => {
-                            tableId && setTableToSearch(base.getTableByIdIfExists(tableId as string) ?? undefined);
+                            tableId && setTable(base.getTableByIdIfExists(tableId as string) ?? undefined);
                         }}
                     />
                 </FormField>
-            </Box>
-
-            <Box>
-                <FormFieldLabelWithTooltip fieldLabel={'AI Performance'}
-                                           fieldLabelTooltip={'A more powerful AI will take longer to respond, but may produce better results.'}/>
-                <SelectButtons
-                    value={aiPowerPreference}
-                    disabled={askAiIsPending}
-                    onChange={newValue => setAiPowerPreference(newValue as AIPowerPreferenceOptions['value'])}
-                    options={aiPowerOptions}
-                />
             </Box>
 
             <FormField label='Query'>
@@ -106,27 +88,26 @@ export const AskAI = ({
                     disabled={askAiIsPending}
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Ask the AI anything about your table..."
+                    placeholder="Ask Airy anything about your table..."
                 />
             </FormField>
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records... <Loader scale={0.2}/></Button>}>
-                {tableToSearch
+                {table
                     ? <AskAIButton
-                        setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiAnswer}
+                        setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
                         setStatusMessage={setStatusMessage}
-                        setAIResponse={setAIResponse}
-                        searchIsPending={askAiIsPending}
-                        setAskAiIsPending={setAskAiIsPending}
-                        askAIService={askAiService}
-                        searchTableConfig={(searchTableConfigs
+                        setAIResponse={setAiryResponse}
+                        askAiryIsPending={askAiIsPending}
+                        setAskAiryIsPending={setAskAiIsPending}
+                        askAiryService={askAiService}
+                        airyTableConfig={(airyTableConfigs
                             // TODO: Make sure there are no edge cases here.
-                            .find(searchTableConfig => searchTableConfig.table.id === tableToSearch.id) as SearchTableConfigWithDefinedSearchIndexField)}
+                            .find(airyTableConfig => airyTableConfig.table.id === table.id) as AiryTableConfigWithDefinedDataIndexField)}
                         setSearchResults={setSearchResults}
-                        aiPowerPreference={aiPowerPreference}
                         query={query}
                     />
-                    : <Button disabled={true} variant='primary'>Ask AI</Button>
+                    : <Button disabled={true} variant='primary'>Ask Airy</Button>
                 }
             </Suspense>
 
@@ -134,23 +115,23 @@ export const AskAI = ({
                 <Text fontSize={16}><Loader scale={0.25}/>&nbsp; &nbsp;{statusMessage}</Text>
             </Box>}
 
-            {AIResponse &&
+            {AiryResponse &&
                 <Box>
-                    <Heading display='inline-block'>AI Response </Heading><Tooltip
+                    <Heading display='inline-block'>Airy's Response </Heading><Tooltip
                     fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
                     content={() => <Text margin='0 0.5rem 0 0.5rem' textColor='white' size='small' display='inline'>
-                        {numRelevantRecordsUsedInAiAnswer == 0
+                        {numRelevantRecordsUsedInAiryResponse == 0
                             ? 'The AI did not use any data from Airtable to respond to this query.'
-                            : `The AI was able to use the top ${numRelevantRecordsUsedInAiAnswer} most relevant records to generate this response.`}</Text>}
+                            : `The AI was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}</Text>}
                     placementX={Tooltip.placements.CENTER}
                     placementY={Tooltip.placements.TOP}>
                     <Icon position='relative' fillColor='dark-gray' name="info"
                           size={16} marginLeft='0.25rem'/>
                 </Tooltip>
                     {
-                        typeof AIResponse === 'string'
-                            ? <Text>{AIResponse}</Text>
-                            : <StreamedAIResponse setAskAIPending={setAskAiIsPending} aiResponse={AIResponse}/>
+                        typeof AiryResponse === 'string'
+                            ? <Text>{AiryResponse}</Text>
+                            : <StreamedAIResponse setAskAIPending={setAskAiIsPending} aiResponse={AiryResponse}/>
                     }
                 </Box>
             }

@@ -12,27 +12,27 @@ export type AiProvidersConfiguration = Record<AIProviderName, {
 export type ExtensionConfiguration = {
     currentAiProvider: AIProviderName,
     aiProvidersConfiguration: AiProvidersConfiguration
-    searchTables: SearchTableConfig[],
+    airyTableConfigs: AiryTableConfig[],
 }
 
 export type SerializableExtensionConfiguration = {
     currentAiProvider: AIProviderName,
     aiProvidersConfiguration: AiProvidersConfiguration
-    searchTables: SerializableSearchTableConfig[],
+    airyTables: SerializableAiryTableConfig[],
 }
 
-export type SearchTableConfig = {
+export type AiryTableConfig = {
     table: Table,
-    searchFields: Field[],
-    intelliSearchIndexFields: {
+    fields: Field[],
+    airyDataIndexFields: {
         openai?: Field,
     }
 }
 
-export type SerializableSearchTableConfig = {
-    table: TableId,
-    searchFields: FieldId[],
-    intelliSearchIndexFields: {
+export type SerializableAiryTableConfig = {
+    tableId: TableId,
+    airyFieldIds: FieldId[],
+    airyDataIndexFieldIds: {
         openai?: FieldId,
     }
 }
@@ -43,10 +43,10 @@ export type AIProviderOptions = {
     embeddingModelSelectOptions: { value: string, label: string }[],
 }
 
-export type SearchTableConfigWithDefinedSearchIndexField = {
+export type AiryTableConfigWithDefinedDataIndexField = {
     table: Table,
-    searchFields: Field[],
-    intelliSearchIndexField: Field,
+    airyFields: Field[],
+    dataIndexField: Field,
 }
 
 export type OpenAIEmbeddingModel = 'text-embedding-ada-002';

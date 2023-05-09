@@ -1,7 +1,7 @@
 import {Id, toast} from "react-toastify";
-import {AIProviderName, SearchTableConfig} from "../types/ConfigurationTypes";
+import {AIProviderName, AiryTableConfig} from "../types/ConfigurationTypes";
 import {Record} from "@airtable/blocks/models";
-import {SearchTableSchema} from "../types/CoreTypes";
+import {AiryTableSchema} from "../types/CoreTypes";
 
 export function mapValues<T extends object, V>(obj: T, valueMapper: (k: keyof T, v: T[keyof T]) => V) {
     return Object.fromEntries(
@@ -53,50 +53,50 @@ export const changeLoadingToastToErrorToast = (errorMessage: string, toastId: Id
     });
 }
 
-export const removeDeletedTablesAndFieldsFromSearchTableConfigs = (searchTableConfigs: SearchTableConfig[]):
-    { deletionOccurred: boolean, searchTableConfigs: SearchTableConfig[] } => {
+export const removeDeletedTablesAndFieldsFromAiryTableConfigs = (airyTableConfigs: AiryTableConfig[]):
+    { deletionOccurred: boolean, airyTableConfigs: AiryTableConfig[] } => {
     let deletionOccurred = false;
-    const newSearchTableConfigs = searchTableConfigs
-        .filter(searchTable => {
-            if (searchTable.table.isDeleted) {
+    const newAiryTableConfigs = airyTableConfigs
+        .filter(airyTable => {
+            if (airyTable.table.isDeleted) {
                 deletionOccurred = true;
                 return false;
             }
             return true;
         })
-        .map(searchTable => {
-            const newSearchFields = searchTable.searchFields.filter(searchField => {
-                if (searchField.isDeleted) {
+        .map(airyTable => {
+            const newAiryFields = airyTable.fields.filter(airyField => {
+                if (airyField.isDeleted) {
                     deletionOccurred = true;
                     return false;
                 }
                 return true;
             });
 
-            const newIntelliSearchIndexFields: Partial<typeof searchTable.intelliSearchIndexFields> = {};
-            for (const [aiProviderName, indexField] of Object.entries(searchTable.intelliSearchIndexFields)) {
+            const airyDataIndexFields: Partial<typeof airyTable.airyDataIndexFields> = {};
+            for (const [aiProviderName, indexField] of Object.entries(airyTable.airyDataIndexFields)) {
                 if (indexField !== undefined && indexField.isDeleted) {
                     deletionOccurred = true;
-                    newIntelliSearchIndexFields[aiProviderName as AIProviderName] = undefined;
+                    airyDataIndexFields[aiProviderName as AIProviderName] = undefined;
                 } else {
-                    newIntelliSearchIndexFields[aiProviderName as AIProviderName] = indexField;
+                    airyDataIndexFields[aiProviderName as AIProviderName] = indexField;
                 }
             }
 
             return {
-                ...searchTable,
-                searchFields: newSearchFields,
-                intelliSearchIndexFields: newIntelliSearchIndexFields
+                ...airyTable,
+                fields: newAiryFields,
+                airyDataIndexFields: airyDataIndexFields
             };
         });
 
-    return {deletionOccurred: deletionOccurred, searchTableConfigs: newSearchTableConfigs};
+    return {deletionOccurred: deletionOccurred, airyTableConfigs: newAiryTableConfigs};
 };
 
-export const serializeRecord = (record: Record, {searchFields, intelliSearchIndexField}: Omit<SearchTableSchema, 'table'>) =>
-    searchFields.reduce((serializedRecordData, currentField) => {
+export const serializeRecord = (record: Record, {airyFields, airyDataIndexField}: Omit<AiryTableSchema, 'table'>) =>
+    airyFields.reduce((serializedRecordData, currentField) => {
         const fieldValue = record.getCellValueAsString(currentField.id);
-        if (fieldValue !== '' && currentField.id !== intelliSearchIndexField.id) {
+        if (fieldValue !== '' && currentField.id !== airyDataIndexField.id) {
             return serializedRecordData + `${currentField.name} is ${fieldValue}. `;
         }
         return serializedRecordData;

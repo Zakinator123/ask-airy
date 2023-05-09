@@ -1,6 +1,5 @@
 import {ChatCompletionRequestMessage, Configuration, OpenAIApi} from "openai";
 import {
-    AIPowerPreference,
     AIService,
     AIServiceError,
     AITableQueryResponse,
@@ -8,7 +7,7 @@ import {
     RecordIndexData,
     RecordToIndex,
     RequestWithTokensToBeRateLimited,
-    SearchTableSchema
+    AiryTableSchema
 } from "../types/CoreTypes";
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
@@ -17,12 +16,12 @@ import {OpenAI} from "openai-streams";
 
 
 const getTextualDescriptionOfTableSchema = ({
-                                                searchFields,
+                                                airyFields,
                                                 table
-                                            }: Omit<SearchTableSchema, 'intelliSearchIndexField'>): string => cleanTemplateLiteral(`
+                                            }: Omit<AiryTableSchema, 'airyDataIndexField'>): string => cleanTemplateLiteral(`
                                             I have a query regarding data that is in a spreadsheet table. 
                                             The table's name is ${table.name}${table.description && ` The description of the table is ${table.description}.`}.
-                                            The table has the following columns: ${searchFields.map(field => field.name).join(', ')}.`)
+                                            The table has the following columns: ${airyFields.map(field => field.name).join(', ')}.`)
 
 const calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
     messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 4), 0)
@@ -39,7 +38,7 @@ export class OpenAIService implements AIService {
     private readonly powerfulChatModelConfiguration: AIModelConfiguration;
     private readonly _maxRequests: number;
     private readonly _maxTokens: number;
-    private readonly requestAndTokenRateLimiter: RequestAndTokenRateLimiter<RecordIndexData>;
+    private readonly requestAndTokenRateLimiter: RequestAndTokenRateLimiter;
     private readonly apiKey;
 
     constructor(apiKey: string,
@@ -59,13 +58,13 @@ export class OpenAIService implements AIService {
         }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
-        this.requestAndTokenRateLimiter = new RequestAndTokenRateLimiter<RecordIndexData>(_maxRequests, 60000, _maxTokens);
+        this.requestAndTokenRateLimiter = new RequestAndTokenRateLimiter(_maxRequests, 60000, _maxTokens);
     }
 
     getHypotheticalSearchResultGivenUserQuery = async ({
-                                                           searchFields,
+                                                           airyFields,
                                                            table
-                                                       }: SearchTableSchema, query: string): Promise<string> => {
+                                                       }: AiryTableSchema, query: string): Promise<string> => {
         const messages: ChatCompletionRequestMessage[] = [
             {
                 role: "system",
@@ -73,7 +72,7 @@ export class OpenAIService implements AIService {
             },
             {
                 role: "user",
-                content: cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema({searchFields, table})}
+                content: cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema({airyFields: airyFields, table})}
                  Please generate a few hypothetical rows of data that are relevant to the following query: 
                  ${query}. 
                  The hypothetical row you return should be formatted as a comma separated list of values, one for each column in the table.
@@ -99,12 +98,11 @@ export class OpenAIService implements AIService {
     }
 
     answerQueryGivenRelevantAirtableContext = async (query: string,
-                                                     searchTableSchema: SearchTableSchema,
-                                                     relevantContextData: string[],
-                                                     aiPowerPreference: AIPowerPreference):
+                                                     airyTableSchema: AiryTableSchema,
+                                                     relevantContextData: string[]):
         Promise<AITableQueryResponse> => {
 
-        const aiModelConfiguration = aiPowerPreference === 'fast' ? this.fastChatModelConfiguration : this.powerfulChatModelConfiguration;
+        const aiModelConfiguration = this.powerfulChatModelConfiguration;
         const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
 
         const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries.
@@ -113,7 +111,7 @@ export class OpenAIService implements AIService {
                 If the relevant context data does not seem sufficient to answer the question, you should think step by step to see if you can infer an answer from the context data.
                 If you still cannot answer the query based on the context data, you may use your general knowledge to answer the question.`);
 
-        const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(searchTableSchema)}
+        const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}
                 Here is some potentially relevant data from the table sorted from most relevant to least relevant formatted as JSON:`);
 
         const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4) + 10;
@@ -152,28 +150,20 @@ export class OpenAIService implements AIService {
 
 
         try {
-        const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
-            "chat",
-            {
-                messages: messages,
-                model: aiModelConfiguration.model,
-                max_tokens: tokensAllocatedForAIResponse,
-                temperature: 0.3,
-                top_p: 1,
-                n: 1
-            },
-            {
-                apiKey: this.apiKey,
-            }
-        )
-            // const response = await this.openai.createChatCompletion({
-            //     model: aiModelConfiguration.model,
-            //     messages: messages,
-            //     max_tokens: tokensAllocatedForAIResponse,
-            //     temperature: 0.3,
-            //     top_p: 1,
-            //     n: 1,
-            // });
+            const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
+                "chat",
+                {
+                    messages: messages,
+                    model: aiModelConfiguration.model,
+                    max_tokens: tokensAllocatedForAIResponse,
+                    temperature: 0.3,
+                    top_p: 1,
+                    n: 1
+                },
+                {
+                    apiKey: this.apiKey,
+                }
+            )
 
             return {
                 errorOccurred: false,
@@ -190,6 +180,7 @@ export class OpenAIService implements AIService {
         }
     }
 
+    // TODO: Truncate records to fit in max context window for embeddings
     getEmbeddingsForRecords = async (recordsToEmbed: Array<RecordToIndex>): Promise<Array<RecordIndexData>> => {
 
         type RecordToIndexWithTokensCounted = RecordToIndex & { numTokensInRequest: number };

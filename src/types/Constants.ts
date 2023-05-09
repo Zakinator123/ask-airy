@@ -3,7 +3,7 @@ import {AIProviderName, AIProviderOptions, ExtensionConfiguration} from "./Confi
 export const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
     openai: {
         prettyName: 'OpenAI',
-        indexFieldName: 'IntelliSearch OpenAI Index',
+        indexFieldName: 'Ask Airy OpenAI Index',
         embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
     },
 }
@@ -17,5 +17,5 @@ export const defaultConfig: ExtensionConfiguration = {
             otherSettings: {},
         },
     },
-    searchTables: [],
+    airyTableConfigs: [],
 }

@@ -10,22 +10,19 @@ export type AITableQueryResponse = {
     message: string
 }
 
-export type AIPowerPreference = 'fast' | 'powerful';
-
 export interface AIService {
-    answerQueryGivenRelevantAirtableContext: (query: string, searchTableSchema: SearchTableSchema, relevantContextData: string[],
-                                              aiPowerPreference: AIPowerPreference) => Promise<AITableQueryResponse>,
+    answerQueryGivenRelevantAirtableContext: (query: string, airyTableSchema: AiryTableSchema, relevantContextData: string[]) => Promise<AITableQueryResponse>,
     getEmbeddingsForRecords: (recordsToEmbed: Array<RecordToIndex>) => Promise<Array<RecordIndexData>>,
     getEmbeddingForString: (string: string) => Promise<Embedding>,
-    getHypotheticalSearchResultGivenUserQuery: (searchTableSchema: Omit<SearchTable, "recordsToSearch">, query: string) => Promise<string>
+    getHypotheticalSearchResultGivenUserQuery: (airyTableSchema: AiryTableSchema, query: string) => Promise<string>
 }
 
-export interface AskAIServiceInterface {
-    updateSearchIndexForTable: (searchTable: SearchTable, recordsToIndex?: Array<RecordToIndex>) => Promise<void>,
-    getStaleRecordsInSearchIndex: (searchTable: SearchTable) => Promise<Array<RecordToIndex>>,
-    executeSemanticSearchForTable: (searchTable: SearchTable, query: string, numResults: number, aiPowerPreference: AIPowerPreference) => Promise<Record[]>,
-    askAIAboutRelevantRecords: (searchTable: SearchTable, query: string, relevantRecords: Record[], aiPowerPreference: AIPowerPreference) => Promise<AITableQueryResponse>,
-    askAIAboutAnything: (query: string) => Promise<string>,
+export interface AskAiryServiceInterface {
+    updateAiryIndexDataForTable: (askAiryTable: AskAiryTable, recordsToIndex?: Array<RecordToIndex>) => Promise<void>,
+    getRecordsWithStaleAiryIndexData: (askAiryTable: AskAiryTable) => Promise<Array<RecordToIndex>>,
+    executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number) => Promise<Record[]>,
+    askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AITableQueryResponse>,
+    askAiryAboutAnything: (query: string) => Promise<string>,
 }
 
 export type Embedding = number[];
@@ -36,14 +33,14 @@ export type RecordIndexData = {
     embedding: Embedding
 }
 
-export type SearchTable = {
+export type AskAiryTable = {
     table: Table,
-    recordsToSearch: Record[],
-    searchFields: Field[],
-    intelliSearchIndexField: Field,
+    recordsToAskAiryAbout: Record[],
+    airyFields: Field[],
+    airyDataIndexField: Field,
 }
 
-export type SearchIndexData = {
+export type AiryIndexData = {
     embedding: Embedding
     hash: string,
 }
@@ -67,4 +64,4 @@ export type AIServiceError = {
 
 export type EmbeddingsResponse = Array<RecordIndexData> | AIServiceError;
 
-export type SearchTableSchema = Omit<SearchTable, 'recordsToSearch'>;
+export type AiryTableSchema = Omit<AskAiryTable, 'recordsToAskAiryAbout'>;

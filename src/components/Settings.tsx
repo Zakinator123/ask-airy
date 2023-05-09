@@ -19,18 +19,18 @@ import {
     AIProviderName,
     ExtensionConfiguration,
     OpenAIEmbeddingModel,
-    SearchTableConfig,
+    AiryTableConfig,
 } from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import {
     asyncAirtableOperationWrapper,
     changeLoadingToastToErrorToast,
-    removeDeletedTablesAndFieldsFromSearchTableConfigs
+    removeDeletedTablesAndFieldsFromAiryTableConfigs
 } from "../utils/RandomUtils";
 import {OfflineToastMessage} from "./OfflineToastMessage";
 import {useImmer} from "use-immer";
-import {SearchTablePicker} from "./SearchTablePicker";
+import {AiryTableConfigDialog} from "./AiryTableConfigDialog";
 import {Toast} from "./Toast";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 import {aiProviderData, defaultConfig} from "../types/Constants";
@@ -76,7 +76,7 @@ const attemptConfigUpdateAndShowToast = (
     toastContainerId: { containerId: Id },
     setConfigurationUpdatePending: (pending: boolean) => void,
     globalConfigSettingsService: GlobalConfigSettingsService,
-    setSearchTableConfigs: (searchTableConfigs: SearchTableConfig[]) => void
+    setAiryTableConfigs: (airyTableConfigs: AiryTableConfig[]) => void
 ) => {
     setConfigurationUpdatePending(true);
 
@@ -90,7 +90,7 @@ const attemptConfigUpdateAndShowToast = (
 
                 const extensionConfiguration = globalConfigSettingsService.getExtensionConfigurationFromGlobalConfig();
                 if (extensionConfiguration) {
-                    setSearchTableConfigs(extensionConfiguration.searchTables);
+                    setAiryTableConfigs(extensionConfiguration.airyTableConfigs);
                 }
 
                 toast.update(configurationUpdateToastId, {
@@ -124,24 +124,24 @@ export const Settings = ({
     useEffect(() => () => toast.dismiss(), []);
 
     const [aiProvidersConfiguration, setAiProvidersConfiguration] = useImmer(extensionConfiguration ? extensionConfiguration.aiProvidersConfiguration : defaultConfig.aiProvidersConfiguration);
-    const [aiProviderName, setAiProviderName] = useState(extensionConfiguration ? extensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
-    const [searchTableConfigs, setSearchTableConfigs] = useImmer(extensionConfiguration ? extensionConfiguration.searchTables : defaultConfig.searchTables);
+    const [aiProviderName] = useState(extensionConfiguration ? extensionConfiguration.currentAiProvider : defaultConfig.currentAiProvider);
+    const [airyTableConfigs, setAiryTableConfigs] = useImmer(extensionConfiguration ? extensionConfiguration.airyTableConfigs : defaultConfig.airyTableConfigs);
     const [manualConfigurationToastId] = [{containerId: 'manual-configuration-toast'}];
 
     const newExtensionConfigurationToSave: ExtensionConfiguration = {
         currentAiProvider: aiProviderName,
         aiProvidersConfiguration: aiProvidersConfiguration,
-        searchTables: searchTableConfigs,
+        airyTableConfigs: airyTableConfigs,
     }
 
-    const sanitizeSearchTableConfigs = removeDeletedTablesAndFieldsFromSearchTableConfigs(searchTableConfigs)
-    if (sanitizeSearchTableConfigs.deletionOccurred) {
-        setSearchTableConfigs(sanitizeSearchTableConfigs.searchTableConfigs);
+    const sanitizeAiryTableConfigs = removeDeletedTablesAndFieldsFromAiryTableConfigs(airyTableConfigs)
+    if (sanitizeAiryTableConfigs.deletionOccurred) {
+        setAiryTableConfigs(sanitizeAiryTableConfigs.airyTableConfigs);
     }
 
-    const removeSearchTable = (searchTablesIndex: number) => {
-        setSearchTableConfigs(searchTables => {
-            searchTables.splice(searchTablesIndex, 1);
+    const removeAiryTable = (airyTablesIndex: number) => {
+        setAiryTableConfigs(airyTables => {
+            airyTables.splice(airyTablesIndex, 1);
         });
     }
 
@@ -154,19 +154,18 @@ export const Settings = ({
                  maxWidth='420px'
                  width='100%'
                  className='ai-config-container'>
-                <Heading marginBottom={3}>AI Configuration</Heading>
+                <Heading marginBottom={3}>Airy AI Settings</Heading>
 
-                <FormField label="Select Your AI Provider">
-                    <SelectButtons
-                        value={aiProviderName}
-                        onChange={newValue => setAiProviderName(newValue as AIProviderName)}
-                        options={
-                            [{
-                                value: "openai",
-                                label: `${aiProviderData["openai"].prettyName}`
-                            }]}
-                    />
-                </FormField>
+                    {/*<SelectButtons*/}
+                    {/*    value={aiProviderName}*/}
+                    {/*    onChange={newValue => setAiProviderName(newValue as AIProviderName)}*/}
+                    {/*    options={*/}
+                    {/*        [{*/}
+                    {/*            value: "openai",*/}
+                    {/*            label: `${aiProviderData["openai"].prettyName}`*/}
+                    {/*        }]}*/}
+                    {/*/>*/}
+
                 <FormField label={`${aiProviderData[aiProviderName].prettyName} API Key`}>
                     <Input
                         placeholder={`Enter your ${aiProviderData[aiProviderName].prettyName} API key`}
@@ -200,47 +199,47 @@ export const Settings = ({
             </Box>
 
             <Box display='flex' alignItems='center' flexDirection='column' maxWidth='1000px' marginTop={2} padding={3}>
-                <Heading>Searchable Tables</Heading>
+                <Heading>Tables Accessible to Airy</Heading>
 
                 <Box display='flex' flexWrap='wrap' justifyContent='center'>
-                    {searchTableConfigs.map((searchTableConfig, index) =>
+                    {airyTableConfigs.map((airyTableConfig, index) =>
                         <Box maxWidth='350px' margin={3} border='default' key={index} padding={3} display='flex'
                              flexDirection='column'
                              justifyContent='space-between'>
                             <Box>
                                 <Heading size="xsmall" display='inline'>Table: </Heading><Text
-                                display='inline'>{searchTableConfig.table.name}</Text>
+                                display='inline'>{airyTableConfig.table.name}</Text>
                             </Box>
                             <Box>
-                                <Heading marginTop={3} size='xsmall'>Searchable Fields:</Heading>
-                                {(searchTableConfig.searchFields).length !== 0 &&
+                                <Heading marginTop={3} size='xsmall'>Fields Accessible to Airy:</Heading>
+                                {(airyTableConfig.fields).length !== 0 &&
                                     <Box display='flex'
-                                         flexWrap='wrap'>{searchTableConfig.searchFields.map((searchField, index) =>
+                                         flexWrap='wrap'>{airyTableConfig.fields.map((airyField, index) =>
                                         <Box key={index} marginLeft={3}>
                                             <FieldIcon
                                                 position='relative'
                                                 top='3px'
-                                                field={searchField}
-                                                size={16}/> <Text display='inline-block'>{searchField.name}</Text>
+                                                field={airyField}
+                                                size={16}/> <Text display='inline-block'>{airyField.name}</Text>
                                         </Box>)}
                                     </Box>
                                 }
                             </Box>
 
                             <Box borderBottom='solid' borderColor='lightgray' paddingBottom={4}>
-                                <Heading marginTop={3} size='xsmall'>IntelliSearch Index Field: <Tooltip
-                                    content="This field will be used to store AI-generated search data."
+                                <Heading marginTop={3} size='xsmall'>Airy Data Index Field: <Tooltip
+                                    content="This field will be used to store data used by Ask Airy."
                                     placementX={Tooltip.placements.CENTER}
                                     placementY={Tooltip.placements.BOTTOM}
                                     shouldHideTooltipOnClick={true}
                                 ><Icon size={12} name='info' position='relative' top='1px'/></Tooltip></Heading>
                                 <Box marginLeft={3}>
-                                    {(searchTableConfig.intelliSearchIndexFields[aiProviderName] !== undefined)
+                                    {(airyTableConfig.airyDataIndexFields[aiProviderName] !== undefined)
                                         ? <Text>
-                                            ✅ {aiProviderData[aiProviderName].prettyName} Index field created.
+                                            ✅ Airy {aiProviderData[aiProviderName].prettyName} Index field created.
                                         </Text>
                                         : <Text>
-                                            ⚠️ {aiProviderData[aiProviderName].prettyName} Index field not yet
+                                            ⚠️ Airy {aiProviderData[aiProviderName].prettyName} Index field not yet
                                             created. <br/>
                                             Save configuration to create field.
                                         </Text>
@@ -248,11 +247,11 @@ export const Settings = ({
                                 </Box>
                             </Box>
                             <Button icon='trash' marginTop={3}
-                                    onClick={() => removeSearchTable(index)}>Remove</Button>
+                                    onClick={() => removeAiryTable(index)}>Remove</Button>
                         </Box>)}
                 </Box>
-                <SearchTablePicker searchTables={searchTableConfigs} setSearchTables={setSearchTableConfigs}
-                                   base={base}/>
+                <AiryTableConfigDialog airyTableConfigs={airyTableConfigs} setAiryTableConfigs={setAiryTableConfigs}
+                                       base={base}/>
             </Box>
 
 
@@ -265,7 +264,7 @@ export const Settings = ({
                 onClick={() => attemptConfigUpdateAndShowToast(newExtensionConfigurationToSave, manualConfigurationToastId,
                     setConfigurationUpdatePending,
                     globalConfigSettingsService,
-                    setSearchTableConfigs,
+                    setAiryTableConfigs,
                 )}>
                 {configurationUpdatePending
                     ? <Loader scale={0.2} fillColor='white'/>
