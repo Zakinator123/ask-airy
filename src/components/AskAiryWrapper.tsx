@@ -101,8 +101,8 @@ const AskAiryWrapper = ({
                 new AskAiryService(
                     new OpenAIService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
                         extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
-                        1000,
-                        100000),
+                        2800,
+                        220000),
                     new AirtableMutationService(new RequestRateLimiter(10, 5)))}
             airyTableConfigs={validatedAiryTableConfigs.configs}
             base={base}

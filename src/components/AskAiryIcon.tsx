@@ -4,8 +4,8 @@ import {Box} from "@airtable/blocks/ui";
 export const AskAiryIcon = () =>
     <Box display='inline-block' position='relative' top='0.3rem'>
         <svg height="40" viewBox="0 0 60 60" width="40" xmlns="http://www.w3.org/2000/svg">
-            <g id="Page-1" fill="none" fill-rule="evenodd">
-                <g id="002---Bot-Message" fill-rule="nonzero" transform="translate(-1)">
+            <g id="Page-1" fill="none" fillRule="evenodd">
+                <g id="002---Bot-Message" fillRule="nonzero" transform="translate(-1)">
                     <path id="Shape"
                           d="m48 39c0 15-10.3 20-23 20s-23-5-23-20c0-14 10.3-24 23-24 3.0903976-.0100698 6.1511982.6020903 9 1.8v1.2c0 1.6568542 1.3431458 3 3 3h1c.5522847 0 1 .4477153 1 1v3.23c.0000627.3593049.1928829.6909565.505101.8687761.3122182.1778196.6958342.1744694 1.004899-.0087761l2.93-1.76c3.0318572 4.2853551 4.6282198 9.4210217 4.56 14.67z"
                           fill="#f5f5f5"/>

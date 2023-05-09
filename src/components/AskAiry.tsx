@@ -15,7 +15,7 @@ import {
 } from "@airtable/blocks/ui";
 import {Base, Record, Table} from "@airtable/blocks/models";
 import {AskAiryServiceInterface} from "../types/CoreTypes";
-import {AskAIButton} from "./AskAIButton";
+import {AskAiryButton} from "./AskAiryButton";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import useReadableStream from "../utils/UseReadableStream";
@@ -94,7 +94,7 @@ export const AskAiry = ({
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records... <Loader scale={0.2}/></Button>}>
                 {table
-                    ? <AskAIButton
+                    ? <AskAiryButton
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
                         setStatusMessage={setStatusMessage}
                         setAIResponse={setAiryResponse}

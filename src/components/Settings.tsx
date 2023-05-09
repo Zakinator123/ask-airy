@@ -6,7 +6,7 @@ import {
     FormField,
     Heading,
     Icon,
-    Input,
+    Input, Link,
     loadCSSFromString,
     Loader,
     Select,
@@ -145,6 +145,13 @@ export const Settings = ({
         });
     }
 
+
+    const apiKeyTierOptions = [
+        { value: "free", label: "Free Tier" },
+        { value: "pre48", label: "Pay-As-You-Go (First 48 Hours)" },
+        { value: "post48", label: "Pay-As-You-Go (After 48 Hours)" }
+    ];
+
     return <>
         <Box className='settings-container'>
             <Box padding={3}
@@ -180,22 +187,34 @@ export const Settings = ({
                         }}
                     />
                 </FormField>
-                <details>
-                    <summary>Advanced Configuration</summary>
-                    <Box padding={3} paddingBottom={0}>
-                        <FormField label="Embedding Model">
-                            <Select
-                                options={aiProviderData[aiProviderName].embeddingModelSelectOptions}
-                                value={aiProvidersConfiguration[aiProviderName].embeddingModel}
-                                onChange={newValue => {
-                                    setAiProvidersConfiguration(aiProvidersConfiguration => {
-                                        aiProvidersConfiguration[aiProviderName].embeddingModel = newValue as OpenAIEmbeddingModel;
-                                    });
-                                }}
-                            />
-                        </FormField>
-                    </Box>
-                </details>
+
+                <FormField label={`${aiProviderData[aiProviderName].prettyName} API Key Tier`}>
+                    <Select
+                        options={apiKeyTierOptions}
+                        value={apiKeyTierOptions[0]!.value}
+                    />
+                    <Text size='small' marginTop={1} marginBottom={2}>
+                        Your API Key Tier dictates your <Link size='small' href='https://platform.openai.com/docs/guides/rate-limits/what-are-the-rate-limits-for-our-api'>rate limits</Link>.
+                        For large tables with lots of text data, the rate limits could slow down Airy's initial data-indexing. </Text>
+                </FormField>
+
+                {/*<details>*/}
+                {/*    <summary>Advanced Configuration</summary>*/}
+                {/*    <Box padding={3} paddingBottom={0}>*/}
+                {/*        <FormField label="Embedding Model">*/}
+                {/*            <Select*/}
+                {/*                options={aiProviderData[aiProviderName].embeddingModelSelectOptions}*/}
+                {/*                value={aiProvidersConfiguration[aiProviderName].embeddingModel}*/}
+                {/*                onChange={newValue => {*/}
+                {/*                    setAiProvidersConfiguration(aiProvidersConfiguration => {*/}
+                {/*                        aiProvidersConfiguration[aiProviderName].embeddingModel = newValue as OpenAIEmbeddingModel;*/}
+                {/*                    });*/}
+                {/*                }}*/}
+                {/*            />*/}
+                {/*        </FormField>*/}
+                {/*    </Box>*/}
+                {/*</details>*/}
+
             </Box>
 
             <Box display='flex' alignItems='center' flexDirection='column' maxWidth='1000px' marginTop={2} padding={3}>

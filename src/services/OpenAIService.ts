@@ -1,13 +1,13 @@
 import {ChatCompletionRequestMessage, Configuration, OpenAIApi} from "openai";
 import {
+    AiryTableSchema,
     AIService,
     AIServiceError,
     AITableQueryResponse,
     EmbeddingsResponse,
     RecordIndexData,
     RecordToIndex,
-    RequestWithTokensToBeRateLimited,
-    AiryTableSchema
+    RequestWithTokensToBeRateLimited
 } from "../types/CoreTypes";
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
@@ -21,7 +21,8 @@ const getTextualDescriptionOfTableSchema = ({
                                             }: Omit<AiryTableSchema, 'airyDataIndexField'>): string => cleanTemplateLiteral(`
                                             I have a query regarding data that is in a spreadsheet table. 
                                             The table's name is ${table.name}${table.description && ` The description of the table is ${table.description}.`}.
-                                            The table has the following columns: ${airyFields.map(field => field.name).join(', ')}.`)
+                                            The table has the following columns: ${table.primaryField.name}, 
+                                            ${airyFields.filter(field => !field.isPrimaryField).map(field => field.name).join(', ')}.`)
 
 const calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
     messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 4), 0)
@@ -49,8 +50,8 @@ export class OpenAIService implements AIService {
         this.openai = new OpenAIApi(new Configuration({apiKey}));
         this.embeddingModel = embeddingModel;
         this.fastChatModelConfiguration = {
-            model: "gpt-3.5-turbo",
-            maxContextWindowTokens: 2049
+            model: "text-davinci-003",
+            maxContextWindowTokens: 1000
         };
         this.powerfulChatModelConfiguration = {
             model: "gpt-3.5-turbo",
@@ -73,27 +74,41 @@ export class OpenAIService implements AIService {
             {
                 role: "user",
                 content: cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema({airyFields: airyFields, table})}
-                 Please generate a few hypothetical rows of data that are relevant to the following query: 
-                 ${query}. 
-                 The hypothetical row you return should be formatted as a comma separated list of values, one for each column in the table.
-                 Each value in the row should be a string prefixed with the column name, followed by a colon, followed by the value.`)
+                 Generate hypothetical rows of data that are very relevant to the following user query delimited by triple quotes: 
+                 """${query}"""
+                 The hypothetical rows should be formatted as a list of comma separated values, one for each column in the table.
+                 Do not include the header row in your response.
+                 Your response should strictly only include the hypothetical rows of data and nothing else.`)
             }
         ];
 
+
         try {
-            const response = await this.openai.createChatCompletion({
+            const performance2 = window.performance;
+            const startTime2 = performance2.now();
+
+            const response2 = await this.openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
                 messages: messages,
-                max_tokens: 3500 - calculateTokensInChatCompletionMessages(messages),
+                max_tokens: 400 - calculateTokensInChatCompletionMessages(messages),
                 temperature: 0.3,
                 top_p: 1,
                 n: 1,
-            });
-
-            return response.data.choices[0]!.message!.content!;
+            })
+            const endTime2 = performance2.now();
+            console.log(`Latency of gpt-3.5-turbo is: ${endTime2 - startTime2} ms`);
+            console.log(`GPT 3.5 Turbo:`);
+            const gpt35Response = response2.data.choices[0]!.message!.content!;
+            // console.log(gpt35Response);
+            return gpt35Response;
         } catch (error: any) {
-            if (error && error.response) console.error(error.response.data);
-            return 'error';
+            console.error("Error in getHypotheticalSearchResultGivenUserQuery");
+            if (error.response) {
+                console.error(error.response.status);
+                console.error(error.response.data);
+            }
+            else console.error(error);
+            return query;
         }
     }
 
@@ -105,23 +120,21 @@ export class OpenAIService implements AIService {
         const aiModelConfiguration = this.powerfulChatModelConfiguration;
         const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
 
-        const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant that responds to user queries.
-                You have access to a spreadsheet table that contains data that is potentially relevant to the user's query.
-                If the query is a question, you should respond concisely with an answer to the question that is based on the relevant context data.
-                If the relevant context data does not seem sufficient to answer the question, you should think step by step to see if you can infer an answer from the context data.
-                If you still cannot answer the query based on the context data, you may use your general knowledge to answer the question.`);
+        const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant named Airy that responds to user queries.
+                You have access to tabular data that is potentially relevant to the user's query.
+                If the query is a question, you should respond concisely with an answer that is based on the relevant context data.
+                If the relevant context data is not sufficient to answer the question, you should try to think step by step to infer an answer from the context data.
+                If you still cannot answer the query, you may use your general knowledge to answer the question.`);
 
         const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}
-                Here is some potentially relevant data from the table sorted from most relevant to least relevant formatted as JSON:`);
+                Here are some potentially relevant data records from the table. Each record is delimited by triple quotes.`);
 
         const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4) + 10;
 
         // Parameterize this?
-        const tokensAllocatedForAIResponse = 1000;
+        const tokensAllocatedForAIResponse = 800;
 
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
-
-        console.log(`numTokensAllowedForContext: ${numTokensAllowedForContext}`)
 
         const relevantSerializedRecordsThatCanFitInContextWindow = [];
         let totalNumTokens = 0;
@@ -172,10 +185,11 @@ export class OpenAIService implements AIService {
             };
         } catch (error: any) {
             if (error.response) {
-                console.error(error.response.data);
-                return {errorOccurred: true, message: `Error Message: ${error.response.data}`};
+                console.error(error.response);
+                return {errorOccurred: true, message: `${error.response.status} ${error.response.data}`};
             } else {
-                return {errorOccurred: true, message: `Error: ${error}`};
+                console.error(error);
+                return {errorOccurred: true, message: `${error}`};
             }
         }
     }
@@ -187,7 +201,6 @@ export class OpenAIService implements AIService {
 
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToEmbed.map((recordToEmbed) => {
             const numTokens = recordToEmbed.serializedDataToEmbed.length / 4;
-            console.log(`Tokens in request ${numTokens}`);
             return {
                 ...recordToEmbed,
                 numTokensInRequest: numTokens
@@ -223,10 +236,7 @@ export class OpenAIService implements AIService {
                         const embeddingResponse = await this.openai.createEmbedding(
                             {
                                 model: this.embeddingModel,
-                                input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => {
-                                    console.log(recordToEmbed.serializedDataToEmbed);
-                                    return recordToEmbed.serializedDataToEmbed;
-                                }),
+                                input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => recordToEmbed.serializedDataToEmbed),
                             });
 
                         return embeddingResponse.data.data.map(({embedding, index}) => ({
@@ -244,8 +254,6 @@ export class OpenAIService implements AIService {
                 },
                 numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
             }));
-
-        console.log(`Number of embeddings requests: ${embeddingsRequestsToBeRateLimited.length}`);
 
         const embeddingsRequestsToBeRateLimitedResponses: Array<EmbeddingsResponse> = await Promise.all(
             embeddingsRequestsToBeRateLimited.map(

@@ -1,5 +1,6 @@
 import {Field, Record, Table} from "@airtable/blocks/models";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
+import {AiryIndexUpdateResult} from "../services/AskAiryService";
 
 export type AITableQueryResponse = {
     errorOccurred: false,
@@ -18,7 +19,7 @@ export interface AIService {
 }
 
 export interface AskAiryServiceInterface {
-    updateAiryIndexDataForTable: (askAiryTable: AskAiryTable, recordsToIndex?: Array<RecordToIndex>) => Promise<void>,
+    updateAiryDataIndexForTable: (askAiryTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>) => Promise<AiryIndexUpdateResult>,
     getRecordsWithStaleAiryIndexData: (askAiryTable: AskAiryTable) => Promise<Array<RecordToIndex>>,
     executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number) => Promise<Record[]>,
     askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AITableQueryResponse>,

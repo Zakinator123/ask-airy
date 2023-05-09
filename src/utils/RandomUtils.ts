@@ -93,14 +93,17 @@ export const removeDeletedTablesAndFieldsFromAiryTableConfigs = (airyTableConfig
     return {deletionOccurred: deletionOccurred, airyTableConfigs: newAiryTableConfigs};
 };
 
-export const serializeRecord = (record: Record, {airyFields, airyDataIndexField}: Omit<AiryTableSchema, 'table'>) =>
-    airyFields.reduce((serializedRecordData, currentField) => {
+export const serializeRecordForEmbeddings = (record: Record, {airyFields, airyDataIndexField}: Omit<AiryTableSchema, 'table'>) => {
+    const serializedFields = airyFields.reduce((serializedRecordData, currentField) => {
         const fieldValue = record.getCellValueAsString(currentField.id);
-        if (fieldValue !== '' && currentField.id !== airyDataIndexField.id) {
-            return serializedRecordData + `${currentField.name} is ${fieldValue}. `;
+        if (fieldValue !== '' && currentField.id !== airyDataIndexField.id && !currentField.isPrimaryField) {
+            return serializedRecordData + `${fieldValue},`;
         }
         return serializedRecordData;
-    }, '')
+    }, '');
+
+    return `${record.name},${serializedFields}`;
+}
 
 export function cleanTemplateLiteral(str: string) {
     return str
