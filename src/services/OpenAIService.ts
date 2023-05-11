@@ -47,7 +47,11 @@ export class OpenAIService implements AIService {
                 _maxRequests: number,
                 _maxTokens: number,) {
         this.apiKey = apiKey;
-        this.openai = new OpenAIApi(new Configuration({apiKey}));
+
+        const openAIConfiguration = new Configuration({apiKey});
+        delete openAIConfiguration.baseOptions.headers['User-Agent'];
+
+        this.openai = new OpenAIApi(openAIConfiguration);
         this.embeddingModel = embeddingModel;
         this.fastChatModelConfiguration = {
             model: "text-davinci-003",
@@ -55,7 +59,7 @@ export class OpenAIService implements AIService {
         };
         this.powerfulChatModelConfiguration = {
             model: "gpt-3.5-turbo",
-            maxContextWindowTokens: 3900
+            maxContextWindowTokens: 3700
         }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
@@ -82,6 +86,8 @@ export class OpenAIService implements AIService {
             }
         ];
 
+        console.log("HyDE Prompt:");
+        console.log(messages);
 
         try {
             const performance2 = window.performance;
@@ -96,8 +102,8 @@ export class OpenAIService implements AIService {
                 n: 1,
             })
             const endTime2 = performance2.now();
-            console.log(`Latency of gpt-3.5-turbo is: ${endTime2 - startTime2} ms`);
-            console.log(`GPT 3.5 Turbo:`);
+            console.log(`Latency of gpt-3.5-turbo Hypothetical result generation is is: ${endTime2 - startTime2} ms`);
+            console.log(`GPT 3.5 Turbo HyDE Response:`);
             const gpt35Response = response2.data.choices[0]!.message!.content!;
             // console.log(gpt35Response);
             return gpt35Response;
@@ -106,8 +112,7 @@ export class OpenAIService implements AIService {
             if (error.response) {
                 console.error(error.response.status);
                 console.error(error.response.data);
-            }
-            else console.error(error);
+            } else console.error(error);
             return query;
         }
     }
@@ -122,18 +127,20 @@ export class OpenAIService implements AIService {
 
         const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant named Airy that responds to user queries.
                 You have access to tabular data that is potentially relevant to the user's query.
-                If the query is a question, you should respond concisely with an answer that is based on the relevant context data.
+                If the query is a question, you should respond concisely with an answer that is based on the relevant context data if applicable.
                 If the relevant context data is not sufficient to answer the question, you should try to think step by step to infer an answer from the context data.
                 If you still cannot answer the query, you may use your general knowledge to answer the question.`);
+        // TODO: Tell it say so if its using general knowledge
+        // TODO: Make it always reference the record names
+        // TODO: Fix bug of pasting in a query after another answer has been generated crashing app
 
-        const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}
-                Here are some potentially relevant data records from the table. Each record is delimited by triple quotes.`);
+        const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}`);
+        const relevantContextDataMessageTokenLength = 250/4;
+        const queryMessageTokenLength = 350/4;
 
-        const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4) + 10;
-
+        const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4 + relevantContextDataMessageTokenLength + queryMessageTokenLength) + 10;
         // Parameterize this?
-        const tokensAllocatedForAIResponse = 800;
-
+        const tokensAllocatedForAIResponse = 500;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 
         const relevantSerializedRecordsThatCanFitInContextWindow = [];
@@ -146,6 +153,12 @@ export class OpenAIService implements AIService {
             }
         }
 
+        const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
+
+        const relevantContextDataMessage = cleanTemplateLiteral(`Here are the top ${numRelevantRecords} potentially relevant data records from the table.
+         There may be more relevant records, but only ${numRelevantRecords} could fit in your model's context window.
+         Each record is delimited by triple quotes: ${relevantSerializedRecordsThatCanFitInContextWindow.join(' ')}`);
+
         const messages: ChatCompletionRequestMessage[] = [
             {
                 role: "system",
@@ -153,13 +166,20 @@ export class OpenAIService implements AIService {
             },
             {
                 role: "user",
-                content: `${schemaContextMessage} ${relevantSerializedRecordsThatCanFitInContextWindow.join('\n')}}`
+                content: `${schemaContextMessage} ${relevantContextDataMessage}`
             },
             {
                 role: "user",
-                content: `My query is: ${query}.`
+                content: cleanTemplateLiteral(`Here is my query delimited by triple quotes: """${query}""".
+                  If applicable, answer the query based on the provided context data mention that your answer is only based on the top ${numRelevantRecords} 
+                  relevant records. If you use context data to answer the query and the record names are IDs, backup your statements by citing the relevant record name IDs.
+                  If the context data is irrelevant to the query, do not mention the context data.
+                  Structure your response with newlines or double newlines for readability. Be modest about what you know.`)
             }
         ];
+
+        console.log("Airy Response Prompt:");
+        console.log(messages);
 
 
         try {

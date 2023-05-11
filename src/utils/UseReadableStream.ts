@@ -36,7 +36,8 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined): UseR
 
                 setData((prevData) => prevData + decoder.decode(value));
                 readData();
-            } catch (err) {
+            } catch (err: any) {
+                setData(JSON.stringify(err));
                 console.log(err);
             }
         };

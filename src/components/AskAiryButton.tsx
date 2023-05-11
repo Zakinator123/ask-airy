@@ -46,23 +46,34 @@ export const AskAiryButton = ({
         setStatusMessage("Checking if Airy's data index is up to date...")
         const staleOrUnIndexedRecords = await askAiryService.getRecordsWithStaleAiryIndexData(airyTable);
         if (staleOrUnIndexedRecords.length > 0) {
-
-            const updateResultPromise = askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords);
             let updateResult;
-
             if (staleOrUnIndexedRecords.length === records.length) {
-                setStatusMessage(`Building Airy Data Index for the ${airyTable.table.name} table - this may take a while...`);
-                updateResult = await updateResultPromise;
-                if (updateResult === 'full-embedding-failure') {
+                const progressMessageUpdaterForFirstTimeIndexBuild = (numSuccessfulUpdates: number) => {
+                    setStatusMessage(`Building Airy Data Index for the ${airyTable.table.name} table. This may take a while. ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully indexed...`);
+                }
+
+                progressMessageUpdaterForFirstTimeIndexBuild(0);
+
+                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForFirstTimeIndexBuild);
+                if (updateResult.airtableWriteSuccesses === 0) {
                     setStatusMessage("❌ Failed to build Airy Data Index - please check your API key or API key tier settings and try again. If the issue persists, please contact support.");
                     setAskAiryIsPending(false);
                     return;
+                } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
+                    toast.error(`Errors occurred while building the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not indexed successfully. Un-indexed records will not be used by Ask Airy. Please check your API key or API key tier settings and try again. If the issue persists, please contact support.`, {autoClose: 10000, containerId: 'ask-airy-error'});
                 }
             } else {
-                setStatusMessage(`Updating ${staleOrUnIndexedRecords.length} records in the Airy Data Index for the ${airyTable.table.name} table...`);
-                const updateResult = await updateResultPromise;
-                if (updateResult !== 'success') {
-                    toast.error('Errors occurred while updating the Airy Data Index - please check your API key or API key tier settings and try again. If the issue persists, please contact support.', {containerId: 'ask-airy-error'});
+                const progressMessageUpdaterForIndexUpdate = (numSuccessfulUpdates: number) => {
+                    setStatusMessage(`Updating ${staleOrUnIndexedRecords.length} records in the Airy Data Index for the ${airyTable.table.name} table. ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully updated...`);
+                }
+
+                progressMessageUpdaterForIndexUpdate(0);
+
+                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForIndexUpdate);
+                if (updateResult.airtableWriteSuccesses === 0) {
+                    toast.error('The Airy Data Index could not be updated. Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again. If the issue persists, please contact support.', {containerId: 'ask-airy-error'});
+                } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
+                    toast.error(`Errors occurred while updating the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not updated successfully. Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again. If the issue persists, please contact support.`, {autoClose: 10000, containerId: 'ask-airy-error'});
                 }
             }
         }
@@ -70,7 +81,7 @@ export const AskAiryButton = ({
         // TODO: Make num results configurable
         const relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5);
         setSearchResults(relevantRecords);
-        setStatusMessage("Asking the AI...");
+        setStatusMessage("Asking Airy...");
 
         const aiResponse = await askAiryService.askAiryAboutRelevantRecords(airyTable, query, relevantRecords);
         setStatusMessage('');

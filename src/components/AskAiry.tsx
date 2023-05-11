@@ -64,7 +64,7 @@ export const AskAiry = ({
             display: 'flex',
             flexDirection: 'column',
             margin: 'auto',
-            maxWidth: '550px',
+            maxWidth: '600px',
             width: '100%'
         }}>
             <Box>
@@ -84,7 +84,9 @@ export const AskAiry = ({
             </Box>
 
             <FormField label='Query'>
-                <Input
+                <textarea
+                    rows={2}
+                    style={{padding: '0.5rem', backgroundColor: '#f2f2f2', border: "none", resize: "vertical"}}
                     disabled={askAiIsPending}
                     value={query}
                     onChange={e => setQuery(e.target.value)}
@@ -92,7 +94,7 @@ export const AskAiry = ({
                 />
             </FormField>
             <Suspense
-                fallback={<Button disabled={true} variant='primary'>Loading Records... <Loader scale={0.2}/></Button>}>
+                fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
                 {table
                     ? <AskAiryButton
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
@@ -116,13 +118,15 @@ export const AskAiry = ({
             </Box>}
 
             {AiryResponse &&
+                // TODO: Make tooltip say users should verify the results themselves
                 <Box>
-                    <Heading display='inline-block'>Airy's Response </Heading><Tooltip
+                    <Heading display='inline-block'>Airy's Response </Heading>
+                    <Tooltip
                     fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
                     content={() => <Text margin='0 0.5rem 0 0.5rem' textColor='white' size='small' display='inline'>
                         {numRelevantRecordsUsedInAiryResponse == 0
-                            ? 'The AI did not use any data from Airtable to respond to this query.'
-                            : `The AI was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}</Text>}
+                            ? 'Airy did not use any data from Airtable to respond to this query.'
+                            : `Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}</Text>}
                     placementX={Tooltip.placements.CENTER}
                     placementY={Tooltip.placements.TOP}>
                     <Icon position='relative' fillColor='dark-gray' name="info"

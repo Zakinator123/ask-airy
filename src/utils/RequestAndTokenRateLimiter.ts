@@ -7,36 +7,59 @@ export class RequestAndTokenRateLimiter {
     private readonly _maxRequestsInFlight = 20;
 
     private fnQueue: Array<RequestWithTokensToBeRateLimited<unknown>> = [];
-    private queueScheduledToClear: boolean = false;
+
+    private requestsBucket: number;
+    private tokensBucket: number;
+
+    private bucketScheduledToEmpty: boolean;
+    private requestsScheduledToExecute: boolean;
 
     constructor(maxRequests: number, maxRequestsInterval: number, maxTokens: number) {
         this._maxRequests = maxRequests;
         this._maxRequestsAndTokensInterval = maxRequestsInterval;
         this._maxTokens = maxTokens;
+        this.requestsBucket = 0;
+        this.tokensBucket = 0;
+        this.bucketScheduledToEmpty = false;
+        this.requestsScheduledToExecute = false;
     }
 
-    private executeLimitedNumberOfRequestsInQueue = async () => {
+    private executeRateLimitedRequestsInQueue = async () => {
+        this.requestsScheduledToExecute = false;
         const queueLength = this.fnQueue.length;
-        if (queueLength !== 0) {
-            let numTokensInFlight = 0;
-            let requestsInFlight = []
-            for (let i = 0; i < Math.min(queueLength, this._maxRequests); i++) {
-                const request = this.fnQueue[0]!;
-                if (numTokensInFlight + request.numTokensInRequest > this._maxTokens) break;
-                if (requestsInFlight.length >= this._maxRequestsInFlight) {
-                    await Promise.all(requestsInFlight);
-                    requestsInFlight = [];
-                }
-                requestsInFlight.push(this.fnQueue.shift()!.request());
+
+        if (queueLength !== 0 && !this.bucketScheduledToEmpty) {
+            setTimeout(() => {
+                this.requestsBucket = 0;
+                this.tokensBucket = 0;
+                this.bucketScheduledToEmpty = false;
+                this.executeRateLimitedRequestsInQueue();
+            }, this._maxRequestsAndTokensInterval);
+        }
+
+        let concurrentRequestsInFlight = []
+        while (this.fnQueue.length !== 0) {
+            const request = this.fnQueue[0]!;
+
+            if (this.tokensBucket + request.numTokensInRequest > this._maxTokens) break;
+            if (this.requestsBucket + 1 > this._maxRequests) break;
+
+            if (concurrentRequestsInFlight.length >= this._maxRequestsInFlight) {
+                await Promise.all(concurrentRequestsInFlight);
+                concurrentRequestsInFlight = [];
             }
-            setTimeout(this.executeLimitedNumberOfRequestsInQueue, this._maxRequestsAndTokensInterval);
-        } else this.queueScheduledToClear = false;
+            this.tokensBucket += request.numTokensInRequest;
+            this.requestsBucket += 1;
+
+            // Undefined error here:
+            concurrentRequestsInFlight.push(this.fnQueue.shift()!.request());
+        }
     }
 
     returnRateAndTokenLimitedPromise = <T>(aiServiceRequestToBeRateLimited: RequestWithTokensToBeRateLimited<T>): Promise<T> => {
-        if (!this.queueScheduledToClear) {
-            this.queueScheduledToClear = true;
-            setTimeout(this.executeLimitedNumberOfRequestsInQueue, 0);
+        if (!this.requestsScheduledToExecute) {
+            this.requestsScheduledToExecute= true;
+            setTimeout(this.executeRateLimitedRequestsInQueue, 0);
         }
 
         return new Promise((resolve, reject) => {

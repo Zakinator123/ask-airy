@@ -20,6 +20,12 @@ export type AiryIndexUpdateResult =
     | 'airtable-update-failure'
     | 'success';
 
+export type AiryDataIndexUpdateResult = {
+    numEmbeddingFailures: number,
+    numAirtableUpdateFailures: number,
+    airtableWriteSuccesses: number
+}
+
 export class AskAiryService implements AskAiryServiceInterface {
     private aiService;
     private AirtableMutationService;
@@ -29,24 +35,34 @@ export class AskAiryService implements AskAiryServiceInterface {
         this.AirtableMutationService = AirtableMutationService;
     }
 
-    updateAiryDataIndexForTable = async (airyTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>): Promise<AiryIndexUpdateResult> => {
+    updateAiryDataIndexForTable = async (airyTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>, dataIndexUpdateProgressUpdater: (numSuccesses: number) => void): Promise<AiryDataIndexUpdateResult> => {
+        let numEmbeddingFailures = 0;
+        let numAirtableUpdateFailures = 0;
+        let airtableWriteSuccesses = 0;
 
-        const timeToGetAllEmbeddings = window.performance.now();
-        const recordEmbeddings: RecordIndexData[] = await this.aiService.getEmbeddingsForRecords(recordsToIndex);
-        const timeToGetAllEmbeddingsEnd = window.performance.now();
-        console.log(`Time to get all embeddings: ${timeToGetAllEmbeddingsEnd - timeToGetAllEmbeddings} ms`);
+        const airtableWritePromises: Promise<void>[] = [];
 
-        let updateResult: AiryIndexUpdateResult;
-        if (recordEmbeddings.length === 0) {
-            return 'full-embedding-failure'
-        } else if (recordEmbeddings.length !== recordsToIndex.length) {
-            updateResult = 'partial-embedding-failure'
-        } else {
-            updateResult = 'success'
-        }
+        for (let i = 0; i < recordsToIndex.length; i += 195) {
+            console.log('Indexing records from ' + i + ' to ' + Math.min(recordsToIndex.length, i + 195));
+            const recordsToIndexSlice = recordsToIndex.slice(i, Math.min(recordsToIndex.length, i + 195));
 
-        try {
-            await this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, recordEmbeddings.map(recordIndexData => (
+            console.log("Before embeddings");
+            const recordEmbeddings: RecordIndexData[] = await this.aiService.getEmbeddingsForRecords(recordsToIndexSlice);
+            console.log("After embeddings");
+
+            if (recordEmbeddings.length === 0) {
+                numEmbeddingFailures += recordsToIndexSlice.length;
+                console.log('Full embedding failure occurred');
+                continue;
+            }
+
+            if (recordEmbeddings.length !== recordsToIndexSlice.length) {
+                numEmbeddingFailures = recordsToIndexSlice.length - recordEmbeddings.length;
+                console.log('Partial embedding failure occurred');
+            }
+
+            console.log("before airtable update");
+            const airtableUpdatePromise = this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, recordEmbeddings.map(recordIndexData => (
                 {
                     id: recordIndexData.recordId,
                     fields: {
@@ -56,9 +72,28 @@ export class AskAiryService implements AskAiryServiceInterface {
                         })
                     }
                 })));
-            return updateResult;
-        } catch (e) {
-            return 'airtable-update-failure';
+            console.log("after airtable promise creation");
+
+            airtableUpdatePromise.then(() => {
+                airtableWriteSuccesses += recordsToIndexSlice.length;
+                dataIndexUpdateProgressUpdater(airtableWriteSuccesses);
+            }).catch(() => {
+                numAirtableUpdateFailures += recordsToIndexSlice.length;
+            });
+
+            console.log("after airtable update promise updating ui progress")
+
+            airtableWritePromises.push(airtableUpdatePromise);
+            console.log('Airtable write promises:');
+            console.log(airtableWritePromises);
+        }
+
+        await Promise.all(airtableWritePromises);
+
+        return {
+            numEmbeddingFailures,
+            numAirtableUpdateFailures,
+            airtableWriteSuccesses
         }
     }
 
