@@ -6,13 +6,13 @@ import {ExtensionConfiguration,} from "../types/ConfigurationTypes";
 import {Tab, TabList, TabPanel, Tabs} from 'react-tabs';
 import AskAiryWrapper from "./AskAiryWrapper";
 import {About} from "./About";
-import {Premium} from "./Premium";
+import {License} from "./License";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {IconName} from "@airtable/blocks/dist/types/src/ui/icon_config";
 import {GumroadLicenseVerificationService} from "../services/LicenseVerificationService";
 import {toast} from "react-toastify";
 import {Toast} from "./Toast";
-import {PremiumStatus} from "../types/OtherTypes";
+import {LicenseStatus} from "../types/OtherTypes";
 import {AskAiryIcon} from "./AskAiryIcon";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 
@@ -122,6 +122,9 @@ ol, ul {
 }
 `);
 
+
+// TODO: Require License to use the extension
+
 export function ExtensionWithSettings({
                                           airtableMutationService,
                                           licenseVerificationService
@@ -137,17 +140,17 @@ export function ExtensionWithSettings({
     const [configurationUpdatePending, setConfigurationUpdatePending] = useState(false);
     const [transactionIsProcessing, setTransactionIsProcessing] = useState<boolean>(false);
 
-    const premiumLicense: string | undefined = (globalConfig.get('premiumLicense') as string | undefined);
-    const premiumLicenseDefined: boolean = premiumLicense !== undefined;
-    const [premiumStatus, setPremiumStatus] = useState<PremiumStatus>(premiumLicenseDefined ? 'premium' : 'free');
+    const license: string | undefined = (globalConfig.get('license') as string | undefined);
+    const premiumLicenseDefined: boolean = license !== undefined;
+    const [premiumStatus, setPremiumStatus] = useState<LicenseStatus>(premiumLicenseDefined ? 'premium' : 'free');
 
-    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 1 : 1);
+    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 1 : 0);
 
     const updatePending = configurationUpdatePending || transactionIsProcessing || premiumUpdatePending;
 
     useEffect(() => {
-        if (premiumLicense !== undefined) {
-            licenseVerificationService.verifyLicense(premiumLicense, false)
+        if (license !== undefined) {
+            licenseVerificationService.verifyLicense(license, false)
                 .then((result) => {
                     setPremiumStatus(result.premiumStatus);
                     if (result.premiumStatus !== 'premium') {
@@ -158,12 +161,12 @@ export function ExtensionWithSettings({
                     }
                 })
         }
-    }, [premiumLicense, licenseVerificationService]);
+    }, [license, licenseVerificationService]);
 
     const TabText = ({text}: { text: string }) =>
         <Text display='inline-block'
               textColor={updatePending ? 'lightgray' : 'black'}>
-            &nbsp;{text}&nbsp;
+            &nbsp;{text}
         </Text>
 
     const TabIcon = ({iconName}: { iconName: IconName }) =>
@@ -186,9 +189,8 @@ export function ExtensionWithSettings({
                     <TabText text='Settings'/>
                 </Tab>
                 <Tab>
-                    <TabIcon iconName="premium"/>
-                    <TabText text='Premium'/>
-                    <TabIcon iconName="premium"/>
+                    <TabIcon iconName="dollar"/>
+                    <TabText text='License'/>
                 </Tab>
                 <Tab>
                     <TabIcon iconName="help"/>
@@ -221,14 +223,14 @@ export function ExtensionWithSettings({
                     setConfigurationUpdatePending={setConfigurationUpdatePending}/>
             </TabPanel>
             <TabPanel>
-                <Premium
+                <License
                     licenseVerificationService={licenseVerificationService}
-                    premiumStatus={premiumStatus}
-                    setPremiumStatus={setPremiumStatus}
-                    premiumUpdatePending={premiumUpdatePending}
-                    setPremiumUpdatePending={setPremiumUpdatePending}
+                    licenseStatus={premiumStatus}
+                    setLicenseStatus={setPremiumStatus}
+                    licenseUpdatePending={premiumUpdatePending}
+                    setLicenseUpdatePending={setPremiumUpdatePending}
                     globalConfig={globalConfig}
-                    currentPremiumLicense={premiumLicense}/>
+                    currentLicense={license}/>
             </TabPanel>
             <TabPanel><About/></TabPanel>
         </Tabs>

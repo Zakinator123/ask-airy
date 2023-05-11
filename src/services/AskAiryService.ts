@@ -2,6 +2,7 @@ import {xxhash64} from "hash-wasm";
 import {Record} from "@airtable/blocks/models";
 import Heap from "heap-js";
 import {
+    AiryDataIndexUpdateResult,
     AiryIndexData,
     AIService,
     AITableQueryResponse,
@@ -11,19 +12,6 @@ import {
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecordForEmbeddings} from "../utils/RandomUtils";
-
-
-export type AiryIndexUpdateResult =
-    'full-embedding-failure'
-    | 'partial-embedding-failure'
-    | 'airtable-update-failure'
-    | 'success';
-
-export type AiryDataIndexUpdateResult = {
-    numEmbeddingFailures: number,
-    numAirtableUpdateFailures: number,
-    airtableWriteSuccesses: number
-}
 
 export class AskAiryService implements AskAiryServiceInterface {
     private aiService;

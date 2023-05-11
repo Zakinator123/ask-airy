@@ -1,7 +1,7 @@
 import React from "react";
 import {Button, useRecords} from "@airtable/blocks/ui";
 import {AskAiryServiceInterface, AskAiryTable} from "../types/CoreTypes";
-import {Record} from "@airtable/blocks/models";
+import {Record, View} from "@airtable/blocks/models";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import {Toast} from "./Toast";
 import {toast} from "react-toastify";
@@ -16,6 +16,7 @@ export const AskAiryButton = ({
                                   airyTableConfig,
                                   setAIResponse,
                                   setSearchResults,
+                                  selectedView,
                                   query
                               }: {
     askAiryIsPending: boolean,
@@ -26,9 +27,12 @@ export const AskAiryButton = ({
     airyTableConfig: AiryTableConfigWithDefinedDataIndexField,
     setAIResponse: (response: ReadableStream | string | undefined) => void,
     setSearchResults: (results: Record[] | undefined) => void,
+    selectedView: View | undefined,
     query: string
 }) => {
-    const records = useRecords(airyTableConfig.table);
+
+    const tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
+    const records = useRecords(tableOrViewForAskAiry);
 
     const airyTable: AskAiryTable = {
         table: airyTableConfig.table,

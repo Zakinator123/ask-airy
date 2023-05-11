@@ -3,11 +3,11 @@ import {
     AiryTableSchema,
     AIService,
     AIServiceError,
-    AITableQueryResponse, EmbeddingsRequest,
-    EmbeddingsResponse,
+    AITableQueryResponse,
+    EmbeddingsRequest,
     RecordIndexData,
-    RecordToIndex, RecordToIndexWithTokensCounted,
-    RequestWithTokensToBeRateLimited
+    RecordToIndex,
+    RecordToIndexWithTokensCounted
 } from "../types/CoreTypes";
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
@@ -130,9 +130,6 @@ export class OpenAIService implements AIService {
                 If the query is a question, you should respond concisely with an answer that is based on the relevant context data if applicable.
                 If the relevant context data is not sufficient to answer the question, you should try to think step by step to infer an answer from the context data.
                 If you still cannot answer the query, you may use your general knowledge to answer the question.`);
-        // TODO: Tell it say so if its using general knowledge
-        // TODO: Make it always reference the record names
-        // TODO: Fix bug of pasting in a query after another answer has been generated crashing app
 
         const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}`);
         const relevantContextDataMessageTokenLength = 250/4;
@@ -174,7 +171,8 @@ export class OpenAIService implements AIService {
                   If applicable, answer the query based on the provided context data mention that your answer is only based on the top ${numRelevantRecords} 
                   relevant records. If you use context data to answer the query and the record names are IDs, backup your statements by citing the relevant record name IDs.
                   If the context data is irrelevant to the query, do not mention the context data.
-                  Structure your response with newlines or double newlines for readability. Be modest about what you know.`)
+                  Structure your response with newlines or double newlines for readability. Be modest about what you know.
+                  If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.`)
             }
         ];
 
@@ -214,7 +212,6 @@ export class OpenAIService implements AIService {
         }
     }
 
-    // TODO: Truncate records to fit in max context window for embeddings
     getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToIndex.map((recordToEmbed) => {
             const numTokens = recordToEmbed.serializedDataToEmbed.length / 4;

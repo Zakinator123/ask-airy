@@ -93,6 +93,7 @@ export const removeDeletedTablesAndFieldsFromAiryTableConfigs = (airyTableConfig
     return {deletionOccurred: deletionOccurred, airyTableConfigs: newAiryTableConfigs};
 };
 
+// TODO: Truncate records here
 export const serializeRecordForEmbeddings = (record: Record, {airyFields, airyDataIndexField}: Omit<AiryTableSchema, 'table'>) => {
     const serializedFields = airyFields.reduce((serializedRecordData, currentField) => {
         const fieldValue = record.getCellValueAsString(currentField.id);

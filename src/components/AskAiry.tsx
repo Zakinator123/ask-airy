@@ -5,20 +5,19 @@ import {
     FormField,
     Heading,
     Icon,
-    Input,
     Loader,
     RecordCardList,
     Select,
-    SelectButtons,
     Text,
-    Tooltip
+    Tooltip,
+    ViewPicker
 } from "@airtable/blocks/ui";
-import {Base, Record, Table} from "@airtable/blocks/models";
+import {Base, Record, Table, View, ViewType} from "@airtable/blocks/models";
 import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAiryButton} from "./AskAiryButton";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
-import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import useReadableStream from "../utils/UseReadableStream";
+import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 
 function StreamedAIResponse({aiResponse, setAskAIPending}: {
     aiResponse: ReadableStream<Uint8Array>,
@@ -38,19 +37,20 @@ function StreamedAIResponse({aiResponse, setAskAIPending}: {
 }
 
 export const AskAiry = ({
-                          askAiryIsPending,
-                          setAskAiIsPending,
-                          askAiService,
-                          airyTableConfigs,
-                          base
-                      }: {
+                            askAiryIsPending,
+                            setAskAiIsPending,
+                            askAiService,
+                            airyTableConfigs,
+                            base
+                        }: {
     askAiryIsPending: boolean,
     setAskAiIsPending: (pending: boolean) => void,
     askAiService: AskAiryServiceInterface,
     airyTableConfigs: AiryTableConfigWithDefinedDataIndexField[],
     base: Base
 }) => {
-    const [table, setTable] = useState<Table | undefined>(undefined);
+    const [selectedTable, setSelectedTable] = useState<Table | undefined>(undefined);
+    const [selectedView, setSelectedView] = useState<View | undefined>(undefined);
     const [searchResults, setSearchResults] = useState<Record[] | undefined>(undefined);
     const [statusMessage, setStatusMessage] = useState<string>('');
     const [AiryResponse, setAiryResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
@@ -75,14 +75,32 @@ export const AskAiry = ({
                             value: airyTableConfig.table.id,
                             label: airyTableConfig.table.name
                         }))}
-                        value={table && table.id}
+                        value={selectedTable && selectedTable.id}
                         onChange={(tableId) => {
-                            tableId && setTable(base.getTableByIdIfExists(tableId as string) ?? undefined);
+                            tableId && setSelectedTable(base.getTableByIdIfExists(tableId as string) ?? undefined);
                         }}
                     />
                 </FormField>
             </Box>
 
+            {selectedTable &&
+                <Box>
+                    <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View' fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
+                        <ViewPicker
+                            shouldAllowPickingNone={true}
+                            allowedTypes={[ViewType.GRID]}
+                            table={selectedTable}
+                            view={selectedView}
+                            onChange={newView => setSelectedView(newView ?? undefined)}
+                        />
+                </Box>
+            }
+
+            {/*// TODO: Add View Filter*/}
+            {/*// TODO: Add ability to Ask Airy not about tables.*/}
+            {/**/}
+            {/*// TODO: Add guide dialog for how best to use Ask Airy - guide should mention that Airy is not a chatbot and will not remember prev questions.*/}
+            {/*// TODO: Fix bug of pasting in a query after another answer has been generated crashing app*/}
             <FormField label='Query'>
                 <textarea
                     rows={2}
@@ -95,7 +113,7 @@ export const AskAiry = ({
             </FormField>
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
-                {table
+                {selectedTable
                     ? <AskAiryButton
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
                         setStatusMessage={setStatusMessage}
@@ -105,7 +123,8 @@ export const AskAiry = ({
                         askAiryService={askAiService}
                         airyTableConfig={(airyTableConfigs
                             // TODO: Make sure there are no edge cases here.
-                            .find(airyTableConfig => airyTableConfig.table.id === table.id) as AiryTableConfigWithDefinedDataIndexField)}
+                            .find(airyTableConfig => airyTableConfig.table.id === selectedTable.id) as AiryTableConfigWithDefinedDataIndexField)}
+                        selectedView={selectedView}
                         setSearchResults={setSearchResults}
                         query={query}
                     />
@@ -122,17 +141,20 @@ export const AskAiry = ({
                 <Box>
                     <Heading display='inline-block'>Airy's Response </Heading>
                     <Tooltip
-                    fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
-                    content={() => <Text margin='0.5rem 0.5rem 0.5rem 0.5rem' textColor='white' size='small' display='inline'>
-                        {numRelevantRecordsUsedInAiryResponse == 0
-                            ? 'Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s responses with the actual data.'
-                            : <>{`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}<br/>
-                             Warning: Airy may produce inaccurate information.<br/> Always crosscheck Airy's responses with your actual data.</>}</Text>}
-                    placementX={Tooltip.placements.CENTER}
-                    placementY={Tooltip.placements.TOP}>
-                    <Icon position='relative' fillColor='red' name="info"
-                          size={16} marginLeft='0.25rem'/>
-                </Tooltip>
+                        fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
+                        content={() => <Text margin='0.5rem 0.5rem 0.5rem 0.5rem' textColor='white' size='small'
+                        >
+                            {numRelevantRecordsUsedInAiryResponse == 0
+                                ? 'Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s responses with the actual data.'
+                                : <>{`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}<br/>
+                                    Airy may produce inaccurate information.<br/> Always crosscheck Airy's
+                                    responses with your actual data.</>}
+                        </Text>}
+                        placementX={Tooltip.placements.CENTER}
+                        placementY={Tooltip.placements.TOP}>
+                        <Icon position='relative' fillColor='red' name="info"
+                              size={16} marginLeft='0.25rem'/>
+                    </Tooltip>
                     {
                         typeof AiryResponse === 'string'
                             ? <Text>{AiryResponse}</Text>

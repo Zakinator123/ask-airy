@@ -6,7 +6,7 @@ import {toast} from "react-toastify";
 import {OfflineToastMessage} from "./OfflineToastMessage";
 import {Toast} from "./Toast";
 import {GumroadLicenseVerificationService} from "../services/LicenseVerificationService";
-import {PremiumStatus} from "../types/OtherTypes";
+import {LicenseStatus} from "../types/OtherTypes";
 
 loadCSSFromString(`
 .centered-premium-container {
@@ -52,164 +52,174 @@ loadCSSFromString(`
 }
 `);
 
-export const Premium = ({
+export const License = ({
                             licenseVerificationService,
-                            premiumStatus,
-                            setPremiumStatus,
-                            premiumUpdatePending,
-                            setPremiumUpdatePending,
+                            licenseStatus,
+                            setLicenseStatus,
+                            licenseUpdatePending,
+                            setLicenseUpdatePending,
                             globalConfig,
-                            currentPremiumLicense
+                            currentLicense
                         }: {
     licenseVerificationService: GumroadLicenseVerificationService
-    premiumStatus: PremiumStatus,
-    setPremiumStatus: (status: PremiumStatus) => void,
-    premiumUpdatePending: boolean,
-    setPremiumUpdatePending: (pending: boolean) => void,
+    licenseStatus: LicenseStatus,
+    setLicenseStatus: (status: LicenseStatus) => void,
+    licenseUpdatePending: boolean,
+    setLicenseUpdatePending: (pending: boolean) => void,
     globalConfig: GlobalConfig,
-    currentPremiumLicense: string | undefined,
+    currentLicense: string | undefined,
 }) => {
-    const [licenseKey, setLicenseKey] = useState(currentPremiumLicense ?? '');
+    const [licenseKey, setLicenseKey] = useState(currentLicense ?? '');
     useEffect(() => () => toast.dismiss(), []);
 
-    const premiumToastContainerId = 'premium-toast-container'
+    const licenseToastContainerId = 'license-toast-container'
 
     const verifyLicense = () => {
-        setPremiumUpdatePending(true);
+        setLicenseUpdatePending(true);
 
-        if (globalConfig.hasPermissionToSet('premiumLicense', true)) {
+        if (globalConfig.hasPermissionToSet('license', true)) {
             licenseVerificationService.verifyLicense(licenseKey, true)
                 .then(result => {
                     if (result.premiumStatus === 'premium') {
-                        asyncAirtableOperationWrapper(() => globalConfig.setAsync('premiumLicense', licenseKey),
+                        asyncAirtableOperationWrapper(() => globalConfig.setAsync('license', licenseKey),
                             () => toast.loading(<OfflineToastMessage/>, {
                                 autoClose: false,
-                                containerId: premiumToastContainerId
+                                containerId: licenseToastContainerId
                             }))
                             .then(() => {
-                                setPremiumStatus('premium');
+                                setLicenseStatus('premium');
                                 return toast.success(result.message, {
                                     autoClose: 5000,
-                                    containerId: premiumToastContainerId
+                                    containerId: licenseToastContainerId
                                 });
                             })
                             .catch(() => {
                                 licenseVerificationService.decrementGumroadLicenseUsesCount(licenseKey);
                                 toast.error('Your license is valid, but there was an error saving it! Contact the developer for support.', {
                                     autoClose: 8000,
-                                    containerId: premiumToastContainerId
+                                    containerId: licenseToastContainerId
                                 });
                             })
-                    } else toast.error(result.message, {containerId: premiumToastContainerId});
+                    } else toast.error(result.message, {containerId: licenseToastContainerId});
                 })
-                .finally(() => setPremiumUpdatePending(false))
+                .finally(() => setLicenseUpdatePending(false))
         } else {
-            toast.error("You must have base editor permissions to upgrade this extension to premium.", {
+            toast.error("You must have base editor permissions to save a license.", {
                 autoClose: 5000,
-                containerId: premiumToastContainerId
+                containerId: licenseToastContainerId
             });
-            setPremiumUpdatePending(false);
+            setLicenseUpdatePending(false);
         }
     }
 
     const removeLicense = () => {
-        setPremiumUpdatePending(true);
-        if (globalConfig.hasPermissionToSet('premiumLicense', true)) {
-            asyncAirtableOperationWrapper(() => globalConfig.setAsync('premiumLicense', undefined),
+        setLicenseUpdatePending(true);
+        if (globalConfig.hasPermissionToSet('license', true)) {
+            asyncAirtableOperationWrapper(() => globalConfig.setAsync('license', undefined),
                 () => toast.loading(<OfflineToastMessage/>, {
                     autoClose: false,
-                    containerId: premiumToastContainerId
+                    containerId: licenseToastContainerId
                 }))
                 .then(() => {
-                    setPremiumStatus('free');
+                    setLicenseStatus('free');
                     setLicenseKey('');
-                    return toast.success('Successfully removed premium license.', {
+                    return toast.success('Successfully removed license.', {
                         autoClose: 5000,
-                        containerId: premiumToastContainerId
+                        containerId: licenseToastContainerId
                     });
                 })
                 .catch(() => {
-                    toast.error('There was an error removing your premium license. Please try again.', {
+                    toast.error('There was an error removing your license. Please try again.', {
                         autoClose: 8000,
-                        containerId: premiumToastContainerId
+                        containerId: licenseToastContainerId
                     });
                 })
-                .finally(() => setPremiumUpdatePending(false))
+                .finally(() => setLicenseUpdatePending(false))
         } else {
-            toast.error("You must have base editor permissions to remove a premium license.", {
+            toast.error("You must have base editor permissions to remove a license.", {
                 autoClose: 5000,
-                containerId: premiumToastContainerId
+                containerId: licenseToastContainerId
             });
-            setPremiumUpdatePending(false);
+            setLicenseUpdatePending(false);
         }
     }
 
     let infoMessage;
-    switch (premiumStatus) {
+    switch (licenseStatus) {
         case 'premium':
-            infoMessage = "✅  You are a premium user!";
+            infoMessage = "✅  License registered successfully!";
             break;
         case "invalid":
-            infoMessage = "❌  Your premium license is no longer valid.";
+            infoMessage = "❌  Your license is no longer valid.";
             break;
         case 'expired':
-            infoMessage = "❌  Your premium subscription is no longer active." +
-                " Either restart your existing subscription on Gumroad or purchase and verify a new subscription license to continue using premium features.";
+            infoMessage = "❌  Your license subscription is no longer active." +
+                " Either restart your existing subscription on Gumroad or purchase and verify a new subscription license to continue using the extension.";
             break;
         case 'unable-to-verify':
             infoMessage = "❌  Unable to verify license. Check your network connection and reload the extension.";
             break;
         case 'free':
-            infoMessage = 'Upgrade to premium to enable cart sizes larger than 3 items!';
+            infoMessage = 'A license is required to use Ask Airy.';
     }
 
     return <>
         <Box className='centered-premium-container'>
             <Text size='large' maxWidth='450px' marginBottom='1rem'>
-                {infoMessage}
+                {
+                    licenseStatus === 'free'
+                        ? <>{infoMessage}
+                            <Link target="_blank" size='large' style={{display: "inline"}}
+                                  href='https://www.zoftware-solutions.com/l/ask-airy'>
+                                &nbsp;All licenses come with a 1 week free trial!
+                            </Link>
+                        </>
+                        : {infoMessage}
+                }
             </Text>
             <Box className='premium-form'>
                 <FormField
                     className='premium-form-field'
                     marginBottom={0}
                     label={
-                        <><Icon name="premium" size={12}/> Premium License Key <Icon name="premium" size={12}/></>
+                        <><Icon name="premium" size={12}/> License Key <Icon name="premium" size={12}/></>
                     }>
                     <Box className='premium-input-box'>
                         <Input value={licenseKey}
-                               disabled={premiumStatus !== 'free' || premiumUpdatePending}
+                               disabled={licenseStatus !== 'free' || licenseUpdatePending}
                                placeholder='Enter license key here..'
                                onChange={e => setLicenseKey(e.target.value)} type='text'></Input>
                         {
-                            premiumStatus !== 'free'
+                            licenseStatus !== 'free'
                                 ? <Button variant='default'
                                           className='premium-submit-button'
                                           type='submit'
-                                          disabled={premiumUpdatePending}
+                                          disabled={licenseUpdatePending}
                                           onClick={removeLicense}>
-                                    {premiumUpdatePending ? <Loader
+                                    {licenseUpdatePending ? <Loader
                                         scale={0.2}/> : 'Remove License'}
                                 </Button>
                                 : <Button variant='default'
                                           className='premium-submit-button'
                                           type='submit'
-                                          disabled={premiumUpdatePending}
+                                          disabled={licenseUpdatePending}
                                           onClick={verifyLicense}>
-                                    {premiumUpdatePending ? <Loader
+                                    {licenseUpdatePending ? <Loader
                                         scale={0.3}/> : 'Verify License'}
                                 </Button>
                         }
                     </Box>
-                    <Box margin={2}><Text size='small' textColor='gray'>Premium licenses are not transferable between
+                    <Box margin={2}><Text size='small' textColor='gray'>Licenses are not transferable between
                         bases and can only be redeemed once.</Text></Box>
                 </FormField>
-                <Toast containerId={premiumToastContainerId}/>
+                <Toast containerId={licenseToastContainerId}/>
                 <Box marginTop={3} display='flex' alignContent='center' justifyContent='center'>
                     <Link
-                        href="https://www.zoftware-solutions.com/l/checkoutcart"
+                        href="https://www.zoftware-solutions.com/l/ask-airy"
                         target="_blank">
                         <Button variant='primary'>
-                            Purchase License
+                            {/*TODO: Show different message here if user already has a license? */}
+                            Start your Free Trial!
                         </Button>
                     </Link>
                 </Box>

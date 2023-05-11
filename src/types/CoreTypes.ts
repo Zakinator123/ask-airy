@@ -1,6 +1,5 @@
 import {Field, Record, Table} from "@airtable/blocks/models";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
-import {AiryDataIndexUpdateResult, AiryIndexUpdateResult} from "../services/AskAiryService";
 
 export type AITableQueryResponse = {
     errorOccurred: false,
@@ -73,5 +72,11 @@ export type RecordToIndexWithTokensCounted = RecordToIndex & { numTokensInReques
 export type EmbeddingsRequest = {
     recordsToEmbed: Array<RecordToIndexWithTokensCounted>,
     numTokensInRecordsToEmbed: number
+}
+
+export type AiryDataIndexUpdateResult = {
+    numEmbeddingFailures: number,
+    numAirtableUpdateFailures: number,
+    airtableWriteSuccesses: number
 }
 
