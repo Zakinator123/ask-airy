@@ -13,9 +13,10 @@ export type AITableQueryResponse = {
 
 export interface AIService {
     answerQueryGivenRelevantAirtableContext: (query: string, airyTableSchema: AiryTableSchema, relevantContextData: string[]) => Promise<AITableQueryResponse>,
-    getEmbeddingsForRecords: (recordsToEmbed: Array<RecordToIndex>) => Promise<Array<RecordIndexData>>,
+    getEmbeddings: (embeddingsRequest: EmbeddingsRequest) => Promise<Array<RecordIndexData> | undefined>,
     getEmbeddingForString: (string: string) => Promise<Embedding>,
-    getHypotheticalSearchResultGivenUserQuery: (airyTableSchema: AiryTableSchema, query: string) => Promise<string>
+    getHypotheticalSearchResultGivenUserQuery: (airyTableSchema: AiryTableSchema, query: string) => Promise<string>,
+    getEmbeddingsRequestsForRecords: (recordsToIndex: Array<RecordToIndex>) => Array<EmbeddingsRequest>
 }
 
 export interface AskAiryServiceInterface {
@@ -66,3 +67,11 @@ export type AIServiceError = {
 export type EmbeddingsResponse = Array<RecordIndexData> | AIServiceError;
 
 export type AiryTableSchema = Omit<AskAiryTable, 'recordsToAskAiryAbout'>;
+
+export type RecordToIndexWithTokensCounted = RecordToIndex & { numTokensInRequest: number };
+
+export type EmbeddingsRequest = {
+    recordsToEmbed: Array<RecordToIndexWithTokensCounted>,
+    numTokensInRecordsToEmbed: number
+}
+

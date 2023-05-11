@@ -12,7 +12,6 @@ export class RequestAndTokenRateLimiter {
     private tokensBucket: number;
 
     private bucketScheduledToEmpty: boolean;
-    private requestsScheduledToExecute: boolean;
 
     constructor(maxRequests: number, maxRequestsInterval: number, maxTokens: number) {
         this._maxRequests = maxRequests;
@@ -21,14 +20,10 @@ export class RequestAndTokenRateLimiter {
         this.requestsBucket = 0;
         this.tokensBucket = 0;
         this.bucketScheduledToEmpty = false;
-        this.requestsScheduledToExecute = false;
     }
 
     private executeRateLimitedRequestsInQueue = async () => {
-        this.requestsScheduledToExecute = false;
-        const queueLength = this.fnQueue.length;
-
-        if (queueLength !== 0 && !this.bucketScheduledToEmpty) {
+        if (this.fnQueue.length !== 0 && !this.bucketScheduledToEmpty) {
             setTimeout(() => {
                 this.requestsBucket = 0;
                 this.tokensBucket = 0;
@@ -51,14 +46,15 @@ export class RequestAndTokenRateLimiter {
             this.tokensBucket += request.numTokensInRequest;
             this.requestsBucket += 1;
 
-            // Undefined error here:
+            console.log(this.requestsBucket);
+            console.log(this.tokensBucket);
+
             concurrentRequestsInFlight.push(this.fnQueue.shift()!.request());
         }
     }
 
     returnRateAndTokenLimitedPromise = <T>(aiServiceRequestToBeRateLimited: RequestWithTokensToBeRateLimited<T>): Promise<T> => {
-        if (!this.requestsScheduledToExecute) {
-            this.requestsScheduledToExecute= true;
+        if (this.fnQueue.length === 0) {
             setTimeout(this.executeRateLimitedRequestsInQueue, 0);
         }
 

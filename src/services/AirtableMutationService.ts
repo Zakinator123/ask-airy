@@ -7,7 +7,7 @@ import {RecordToUpdate} from "../types/OtherTypes";
 
 export class AirtableMutationService {
     private readonly _rateLimiter: RequestRateLimiter;
-    private readonly BATCH_SIZE = 50;
+    private readonly BATCH_SIZE = 48;
 
     constructor(rateLimiter: RequestRateLimiter) {
         this._rateLimiter = rateLimiter;
@@ -17,6 +17,7 @@ export class AirtableMutationService {
         let i = 0;
         const fulfilledPromiseValues = [];
         while (i < recordsOrRecordIds.length) {
+            console.log(`Processing batch ${i} to ${Math.min(recordsOrRecordIds.length, i + this.BATCH_SIZE)}`);
             const recordBatch = recordsOrRecordIds.slice(i, Math.min(recordsOrRecordIds.length, i + this.BATCH_SIZE));
             fulfilledPromiseValues.push(await batchWriteOperation(recordBatch));
             i += this.BATCH_SIZE;

@@ -60,7 +60,12 @@ export const AskAiryButton = ({
                     setAskAiryIsPending(false);
                     return;
                 } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
-                    toast.error(`Errors occurred while building the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not indexed successfully. Un-indexed records will not be used by Ask Airy. Please check your API key or API key tier settings and try again. If the issue persists, please contact support.`, {autoClose: 10000, containerId: 'ask-airy-error'});
+                    toast.error(`Errors occurred while building the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not indexed successfully.
+                      Un-indexed records will not be used by Ask Airy. Please check your API key or API key tier settings and try again.
+                      If the issue persists, please contact support.`, {
+                        autoClose: 10000,
+                        containerId: 'ask-airy-error'
+                    });
                 }
             } else {
                 const progressMessageUpdaterForIndexUpdate = (numSuccessfulUpdates: number) => {
@@ -71,15 +76,33 @@ export const AskAiryButton = ({
 
                 updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForIndexUpdate);
                 if (updateResult.airtableWriteSuccesses === 0) {
-                    toast.error('The Airy Data Index could not be updated. Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again. If the issue persists, please contact support.', {containerId: 'ask-airy-error'});
+                    toast.error('The Airy Data Index could not be updated.' +
+                        ' Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.' +
+                        ' If the issue persists, please contact support.', {
+                        containerId: 'ask-airy-error',
+                        autoClose: 10000
+                    });
                 } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
-                    toast.error(`Errors occurred while updating the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not updated successfully. Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again. If the issue persists, please contact support.`, {autoClose: 10000, containerId: 'ask-airy-error'});
+                    toast.error(`Errors occurred while updating the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not updated successfully.
+                     Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.
+                     If the issue persists, please contact support.`, {
+                        autoClose: 10000,
+                        containerId: 'ask-airy-error'
+                    });
                 }
             }
         }
         setStatusMessage("Finding records relevant to your query...");
         // TODO: Make num results configurable
-        const relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5);
+        // TODO: Test semantic search with empty table.
+        let relevantRecords: Record[] = [];
+        try {
+            relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5);
+        } catch (e) {
+            setStatusMessage("❌ An error occurred finding relevant records for Airy.");
+            setAskAiryIsPending(false);
+            return;
+        }
         setSearchResults(relevantRecords);
         setStatusMessage("Asking Airy...");
 

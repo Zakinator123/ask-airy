@@ -2,25 +2,41 @@ export class RequestRateLimiter {
     private readonly _maxRequests;
     private readonly _interval;
     private fnQueue: Array<() => Promise<any>> = [];
-    private queueScheduledToClear: boolean = false;
+    private requestsBucket: number;
+    private bucketScheduledToEmpty: boolean;
 
     constructor(maxRequests: number, interval: number) {
         this._maxRequests = maxRequests;
         this._interval = interval;
+        this.requestsBucket = 0;
+        this.bucketScheduledToEmpty = false;
     }
 
-    private executeLimitedNumberOfRequestsInQueue = () => {
-        const queueLength = this.fnQueue.length;
-        if (queueLength !== 0) {
-            const promises: Array<Promise<any>> = [];
-            for (let i = 0; i < Math.min(queueLength, this._maxRequests); i++) promises.push(this.fnQueue.shift()!());
-            Promise.all(promises).then(() => setTimeout(this.executeLimitedNumberOfRequestsInQueue, this._interval));
-        } else this.queueScheduledToClear = false;
+    private executeLimitedNumberOfRequestsInQueue = async () => {
+        if (this.fnQueue.length !== 0 && !this.bucketScheduledToEmpty) {
+            setTimeout(() => {
+                this.requestsBucket = 0;
+                this.bucketScheduledToEmpty = false;
+                this.executeLimitedNumberOfRequestsInQueue();
+            }, this._interval);
+        }
+
+        let concurrentRequestsInFlight = [];
+        while (this.fnQueue.length !== 0) {
+            if (this.requestsBucket + 1 > this._maxRequests) break;
+
+            if (concurrentRequestsInFlight.length >= this._maxRequests) {
+                await Promise.all(concurrentRequestsInFlight);
+                concurrentRequestsInFlight = [];
+            }
+
+            this.requestsBucket += 1;
+            concurrentRequestsInFlight.push(this.fnQueue.shift()!());
+        }
     }
 
     returnRateLimitedPromise = <T>(fnToBeRateLimited: () => Promise<T>): Promise<T> => {
-        if (!this.queueScheduledToClear) {
-            this.queueScheduledToClear = true;
+        if (this.fnQueue.length === 0) {
             setTimeout(this.executeLimitedNumberOfRequestsInQueue, 0);
         }
 

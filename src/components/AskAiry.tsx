@@ -38,13 +38,13 @@ function StreamedAIResponse({aiResponse, setAskAIPending}: {
 }
 
 export const AskAiry = ({
-                          askAiIsPending,
+                          askAiryIsPending,
                           setAskAiIsPending,
                           askAiService,
                           airyTableConfigs,
                           base
                       }: {
-    askAiIsPending: boolean,
+    askAiryIsPending: boolean,
     setAskAiIsPending: (pending: boolean) => void,
     askAiService: AskAiryServiceInterface,
     airyTableConfigs: AiryTableConfigWithDefinedDataIndexField[],
@@ -70,7 +70,7 @@ export const AskAiry = ({
             <Box>
                 <FormField label='What do you want to ask Airy about?'>
                     <Select
-                        disabled={askAiIsPending}
+                        disabled={askAiryIsPending}
                         options={airyTableConfigs.map(airyTableConfig => ({
                             value: airyTableConfig.table.id,
                             label: airyTableConfig.table.name
@@ -87,7 +87,7 @@ export const AskAiry = ({
                 <textarea
                     rows={2}
                     style={{padding: '0.5rem', backgroundColor: '#f2f2f2', border: "none", resize: "vertical"}}
-                    disabled={askAiIsPending}
+                    disabled={askAiryIsPending}
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Ask Airy anything about your table..."
@@ -100,7 +100,7 @@ export const AskAiry = ({
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
                         setStatusMessage={setStatusMessage}
                         setAIResponse={setAiryResponse}
-                        askAiryIsPending={askAiIsPending}
+                        askAiryIsPending={askAiryIsPending}
                         setAskAiryIsPending={setAskAiIsPending}
                         askAiryService={askAiService}
                         airyTableConfig={(airyTableConfigs
@@ -114,7 +114,7 @@ export const AskAiry = ({
             </Suspense>
 
             {statusMessage.length !== 0 && <Box display='flex' justifyContent='center'>
-                <Text fontSize={16}><Loader scale={0.25}/>&nbsp; &nbsp;{statusMessage}</Text>
+                <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
             </Box>}
 
             {AiryResponse &&
@@ -123,13 +123,14 @@ export const AskAiry = ({
                     <Heading display='inline-block'>Airy's Response </Heading>
                     <Tooltip
                     fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
-                    content={() => <Text margin='0 0.5rem 0 0.5rem' textColor='white' size='small' display='inline'>
+                    content={() => <Text margin='0.5rem 0.5rem 0.5rem 0.5rem' textColor='white' size='small' display='inline'>
                         {numRelevantRecordsUsedInAiryResponse == 0
-                            ? 'Airy did not use any data from Airtable to respond to this query.'
-                            : `Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}</Text>}
+                            ? 'Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s responses with the actual data.'
+                            : <>{`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}<br/>
+                             Warning: Airy may produce inaccurate information.<br/> Always crosscheck Airy's responses with your actual data.</>}</Text>}
                     placementX={Tooltip.placements.CENTER}
                     placementY={Tooltip.placements.TOP}>
-                    <Icon position='relative' fillColor='dark-gray' name="info"
+                    <Icon position='relative' fillColor='red' name="info"
                           size={16} marginLeft='0.25rem'/>
                 </Tooltip>
                     {

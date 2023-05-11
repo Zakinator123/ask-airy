@@ -7,7 +7,6 @@ import {
     AITableQueryResponse,
     AskAiryServiceInterface,
     AskAiryTable,
-    RecordIndexData,
     RecordToIndex
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
@@ -40,29 +39,19 @@ export class AskAiryService implements AskAiryServiceInterface {
         let numAirtableUpdateFailures = 0;
         let airtableWriteSuccesses = 0;
 
-        const airtableWritePromises: Promise<void>[] = [];
+        const embeddingsRequests = this.aiService.getEmbeddingsRequestsForRecords(recordsToIndex);
 
-        for (let i = 0; i < recordsToIndex.length; i += 195) {
-            console.log('Indexing records from ' + i + ' to ' + Math.min(recordsToIndex.length, i + 195));
-            const recordsToIndexSlice = recordsToIndex.slice(i, Math.min(recordsToIndex.length, i + 195));
-
-            console.log("Before embeddings");
-            const recordEmbeddings: RecordIndexData[] = await this.aiService.getEmbeddingsForRecords(recordsToIndexSlice);
-            console.log("After embeddings");
-
-            if (recordEmbeddings.length === 0) {
-                numEmbeddingFailures += recordsToIndexSlice.length;
-                console.log('Full embedding failure occurred');
+        let currentAirtableWritePromise: Promise<any> | undefined = undefined;
+        for (const embeddingsRequest of embeddingsRequests) {
+            const embeddings = await this.aiService.getEmbeddings(embeddingsRequest);
+            if (embeddings === undefined) {
+                numEmbeddingFailures += embeddingsRequest.recordsToEmbed.length;
                 continue;
             }
 
-            if (recordEmbeddings.length !== recordsToIndexSlice.length) {
-                numEmbeddingFailures = recordsToIndexSlice.length - recordEmbeddings.length;
-                console.log('Partial embedding failure occurred');
-            }
+            if (currentAirtableWritePromise !== undefined) await currentAirtableWritePromise;
 
-            console.log("before airtable update");
-            const airtableUpdatePromise = this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, recordEmbeddings.map(recordIndexData => (
+            currentAirtableWritePromise = this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, embeddings.map(recordIndexData => (
                 {
                     id: recordIndexData.recordId,
                     fields: {
@@ -71,25 +60,18 @@ export class AskAiryService implements AskAiryServiceInterface {
                             embedding: recordIndexData.embedding
                         })
                     }
-                })));
-            console.log("after airtable promise creation");
-
-            airtableUpdatePromise.then(() => {
-                airtableWriteSuccesses += recordsToIndexSlice.length;
-                dataIndexUpdateProgressUpdater(airtableWriteSuccesses);
-            }).catch(() => {
-                numAirtableUpdateFailures += recordsToIndexSlice.length;
-            });
-
-            console.log("after airtable update promise updating ui progress")
-
-            airtableWritePromises.push(airtableUpdatePromise);
-            console.log('Airtable write promises:');
-            console.log(airtableWritePromises);
+                })))
+                .then(() => {
+                    airtableWriteSuccesses += embeddingsRequest.recordsToEmbed.length;
+                    dataIndexUpdateProgressUpdater(airtableWriteSuccesses);
+                })
+                .catch((e) => {
+                    console.error(e);
+                    numAirtableUpdateFailures += embeddingsRequest.recordsToEmbed.length;
+                });
         }
 
-        await Promise.all(airtableWritePromises);
-
+        if (currentAirtableWritePromise !== undefined) await currentAirtableWritePromise;
         return {
             numEmbeddingFailures,
             numAirtableUpdateFailures,
@@ -150,6 +132,7 @@ export class AskAiryService implements AskAiryServiceInterface {
 
         console.log(`Query to be embedded for semantic search: ${hypotheticalSemanticSearchResult}`)
 
+
         const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSemanticSearchResult);
 
         const dotProductPerformance = window.performance;
@@ -159,6 +142,9 @@ export class AskAiryService implements AskAiryServiceInterface {
             const airyIndexDataString = record.getCellValueAsString(airyDataIndexField.id);
             if (airyIndexDataString === '') continue;
             const airyIndexData = JSON.parse(record.getCellValue(airyDataIndexField.id) as string) as AiryIndexData;
+
+            // TODO: Check for integrity of airyIndexData here and delete if corrupted
+
             const dotProduct = this.computeDotProduct(embeddedQuery, airyIndexData.embedding);
 
             if (heap.size() < 1000) {

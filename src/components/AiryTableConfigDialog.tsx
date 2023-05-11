@@ -54,6 +54,7 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
                 newAiryTable && <>
                     <FormField label='Fields Airy Should Know About*'>
                         <Box display='flex' flexWrap='wrap' >
+                            {/*TODO: Warn users that any data longer than X tokens will be truncated in Airy's data index. */}
                             {newAiryTable.fields.map((field, index) => {
 
                                 for (const [, aiProviderOptions] of Object.entries(aiProviderData)) {

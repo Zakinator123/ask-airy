@@ -95,15 +95,15 @@ const AskAiryWrapper = ({
             <Text>{validatedAiryTableConfigs.errorMessage}</Text>
         </Box>
         : <AskAiry
-            askAiIsPending={askAiryIsPending}
+            askAiryIsPending={askAiryIsPending}
             setAskAiIsPending={setAskAiryIsPending}
             askAiService={
                 new AskAiryService(
                     new OpenAIService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
                         extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
-                        2800,
-                        220000),
-                    new AirtableMutationService(new RequestRateLimiter(15, 1000)))}
+                        60,
+                        240000),
+                    new AirtableMutationService(new RequestRateLimiter(14, 1100)))}
             airyTableConfigs={validatedAiryTableConfigs.configs}
             base={base}
         />

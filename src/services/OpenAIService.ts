@@ -3,10 +3,10 @@ import {
     AiryTableSchema,
     AIService,
     AIServiceError,
-    AITableQueryResponse,
+    AITableQueryResponse, EmbeddingsRequest,
     EmbeddingsResponse,
     RecordIndexData,
-    RecordToIndex,
+    RecordToIndex, RecordToIndexWithTokensCounted,
     RequestWithTokensToBeRateLimited
 } from "../types/CoreTypes";
 import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
@@ -215,11 +215,8 @@ export class OpenAIService implements AIService {
     }
 
     // TODO: Truncate records to fit in max context window for embeddings
-    getEmbeddingsForRecords = async (recordsToEmbed: Array<RecordToIndex>): Promise<Array<RecordIndexData>> => {
-
-        type RecordToIndexWithTokensCounted = RecordToIndex & { numTokensInRequest: number };
-
-        const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToEmbed.map((recordToEmbed) => {
+    getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
+        const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToIndex.map((recordToEmbed) => {
             const numTokens = recordToEmbed.serializedDataToEmbed.length / 4;
             return {
                 ...recordToEmbed,
@@ -227,15 +224,10 @@ export class OpenAIService implements AIService {
             }
         });
 
-        const optimalNumTokensPerRequest = Math.floor(this._maxTokens / this._maxRequests);
-
-        type EmbeddingsRequest = {
-            recordsToEmbed: Array<RecordToIndexWithTokensCounted>,
-            numTokensInRecordsToEmbed: number
-        }
+        const tokenLimit = 130000;
+        const optimalNumTokensPerRequest = tokenLimit / 3;
 
         const embeddingsRequests: Array<EmbeddingsRequest> = [];
-
         for (const recordToEmbedWithTokensCounted of recordsToEmbedWithTokensCounted) {
             const lastEmbeddingsRequest = embeddingsRequests[embeddingsRequests.length - 1];
             if (lastEmbeddingsRequest && lastEmbeddingsRequest.numTokensInRecordsToEmbed + recordToEmbedWithTokensCounted.numTokensInRequest <= optimalNumTokensPerRequest) {
@@ -249,49 +241,46 @@ export class OpenAIService implements AIService {
             }
         }
 
-        const embeddingsRequestsToBeRateLimited: Array<RequestWithTokensToBeRateLimited<EmbeddingsResponse>> =
-            embeddingsRequests.map((embeddingsRequest) => ({
-                request: async (): Promise<RecordIndexData[] | AIServiceError> => {
-                    try {
-                        const embeddingResponse = await this.openai.createEmbedding(
-                            {
-                                model: this.embeddingModel,
-                                input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => recordToEmbed.serializedDataToEmbed),
-                            });
+        return embeddingsRequests;
+    }
 
-                        return embeddingResponse.data.data.map(({embedding, index}) => ({
-                            recordId: embeddingsRequest.recordsToEmbed[index]!.recordId,
-                            hash: embeddingsRequest.recordsToEmbed[index]!.newHash,
-                            embedding: embedding
-                        }));
-                    } catch (error: any) {
-                        return {
-                            errorStatus: error?.response?.status,
-                            errorResponse: error?.response?.data,
-                            errorMessage: error?.message
-                        }
+    getEmbeddings = async (embeddingsRequest: EmbeddingsRequest): Promise<Array<RecordIndexData> | undefined> => {
+        const openAIEmbeddingsRequest = {
+            request: async (): Promise<RecordIndexData[] | AIServiceError> => {
+                try {
+                    const embeddingResponse = await this.openai.createEmbedding(
+                        {
+                            model: this.embeddingModel,
+                            input: embeddingsRequest.recordsToEmbed.map((recordToEmbed) => recordToEmbed.serializedDataToEmbed),
+                        });
+
+                    return embeddingResponse.data.data.map(({embedding, index}) => ({
+                        recordId: embeddingsRequest.recordsToEmbed[index]!.recordId,
+                        hash: embeddingsRequest.recordsToEmbed[index]!.newHash,
+                        embedding: embedding
+                    }));
+                } catch (error: any) {
+                    return {
+                        errorStatus: error?.response?.status,
+                        errorResponse: error?.response?.data,
+                        errorMessage: error?.message
                     }
-                },
-                numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
-            }));
+                }
+            },
+            numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
+        }
 
-        const embeddingsRequestsToBeRateLimitedResponses: Array<EmbeddingsResponse> = await Promise.all(
-            embeddingsRequestsToBeRateLimited.map(
-                embeddingRequestToBeRateLimited => this.requestAndTokenRateLimiter.returnRateAndTokenLimitedPromise(embeddingRequestToBeRateLimited)));
+        const result = await this.requestAndTokenRateLimiter.returnRateAndTokenLimitedPromise(openAIEmbeddingsRequest);
 
-        const nonErrorResponses = embeddingsRequestsToBeRateLimitedResponses.filter((embeddingRequestToBeRateLimitedResponse) => {
-            if (!(embeddingRequestToBeRateLimitedResponse instanceof Array)) {
-                const errorMessage = `Error in embedding request:
-                 Status: ${embeddingRequestToBeRateLimitedResponse.errorStatus}
-                 Response: ${embeddingRequestToBeRateLimitedResponse.errorResponse}
-                 Message: ${embeddingRequestToBeRateLimitedResponse.errorMessage}`;
-
-                console.error(errorMessage);
-                return false;
-            } else return true;
-        }) as Array<RecordIndexData[]>;
-
-        return nonErrorResponses.flat();
+        if (result instanceof Array) {
+            return result;
+        }
+        const errorMessage = `Error in embedding request:
+             Status: ${result.errorStatus}
+             Response: ${result.errorResponse}
+             Message: ${result.errorMessage}`;
+        console.error(errorMessage);
+        return undefined;
     }
 
     getEmbeddingForString = (query: string) => {
