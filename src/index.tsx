@@ -6,7 +6,7 @@ import {AirtableMutationService} from "./services/AirtableMutationService";
 import {GumroadLicenseVerificationService} from "./services/LicenseVerificationService";
 
 initializeBlock(() => {
-    const rateLimiter = new RequestRateLimiter(15, 1000);
+    const rateLimiter = new RequestRateLimiter(14, 1100)
     const airtableMutationService = new AirtableMutationService(rateLimiter);
     const licenseVerificationService = new GumroadLicenseVerificationService();
 

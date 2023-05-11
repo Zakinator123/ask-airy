@@ -1,12 +1,12 @@
 import React from "react";
-import {Icon, Tooltip, Text} from "@airtable/blocks/ui";
+import {Icon, Tooltip, Text, Box} from "@airtable/blocks/ui";
 
 export const FormFieldLabelWithTooltip = ({
                                               fieldLabel,
                                               fieldLabelTooltip,
                                               dangerous = false
                                           }: { fieldLabel: string, fieldLabelTooltip: string, dangerous?: boolean }) =>
-    <>
+    <Box marginBottom={1}>
         <Text display='inline-block' textColor='gray'>{fieldLabel}</Text>
         <Tooltip
             fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
@@ -15,4 +15,4 @@ export const FormFieldLabelWithTooltip = ({
             placementY={Tooltip.placements.TOP}>
             <Icon position='relative' top='1px' fillColor={dangerous ? 'red' : 'dark-gray'} name="info" size={12} marginLeft='0.25rem'/>
         </Tooltip>
-    </>
+    </Box>

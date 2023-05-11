@@ -32,11 +32,11 @@ type AIModelConfiguration = {
     maxContextWindowTokens: number,
 }
 
+// TODO: Cleanup embeddings and gpt3.5 max tokens code
 export class OpenAIService implements AIService {
     private openai
     private readonly embeddingModel: OpenAIEmbeddingModel;
-    private readonly fastChatModelConfiguration: AIModelConfiguration;
-    private readonly powerfulChatModelConfiguration: AIModelConfiguration;
+    private readonly chatModelConfiguration: AIModelConfiguration;
     private readonly _maxRequests: number;
     private readonly _maxTokens: number;
     private readonly requestAndTokenRateLimiter: RequestAndTokenRateLimiter;
@@ -53,12 +53,9 @@ export class OpenAIService implements AIService {
 
         this.openai = new OpenAIApi(openAIConfiguration);
         this.embeddingModel = embeddingModel;
-        this.fastChatModelConfiguration = {
-            model: "text-davinci-003",
-            maxContextWindowTokens: 1000
-        };
-        this.powerfulChatModelConfiguration = {
+        this.chatModelConfiguration = {
             model: "gpt-3.5-turbo",
+            // TODO: Update context window calculations
             maxContextWindowTokens: 3700
         }
         this._maxRequests = _maxRequests;
@@ -122,7 +119,7 @@ export class OpenAIService implements AIService {
                                                      relevantContextData: string[]):
         Promise<AITableQueryResponse> => {
 
-        const aiModelConfiguration = this.powerfulChatModelConfiguration;
+        const aiModelConfiguration = this.chatModelConfiguration;
         const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
 
         const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant named Airy that responds to user queries.
@@ -136,7 +133,7 @@ export class OpenAIService implements AIService {
         const queryMessageTokenLength = 350/4;
 
         const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4 + relevantContextDataMessageTokenLength + queryMessageTokenLength) + 10;
-        // Parameterize this?
+        // TODO: Parameterize this?
         const tokensAllocatedForAIResponse = 500;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 

@@ -80,14 +80,14 @@ export const License = ({
         if (globalConfig.hasPermissionToSet('license', true)) {
             licenseVerificationService.verifyLicense(licenseKey, true)
                 .then(result => {
-                    if (result.premiumStatus === 'premium') {
+                    if (result.licenseStatus === 'license-active') {
                         asyncAirtableOperationWrapper(() => globalConfig.setAsync('license', licenseKey),
                             () => toast.loading(<OfflineToastMessage/>, {
                                 autoClose: false,
                                 containerId: licenseToastContainerId
                             }))
                             .then(() => {
-                                setLicenseStatus('premium');
+                                setLicenseStatus('license-active');
                                 return toast.success(result.message, {
                                     autoClose: 5000,
                                     containerId: licenseToastContainerId
@@ -121,7 +121,7 @@ export const License = ({
                     containerId: licenseToastContainerId
                 }))
                 .then(() => {
-                    setLicenseStatus('free');
+                    setLicenseStatus('no-license');
                     setLicenseKey('');
                     return toast.success('Successfully removed license.', {
                         autoClose: 5000,
@@ -146,7 +146,7 @@ export const License = ({
 
     let infoMessage;
     switch (licenseStatus) {
-        case 'premium':
+        case 'license-active':
             infoMessage = "✅  License registered successfully!";
             break;
         case "invalid":
@@ -159,24 +159,32 @@ export const License = ({
         case 'unable-to-verify':
             infoMessage = "❌  Unable to verify license. Check your network connection and reload the extension.";
             break;
-        case 'free':
+        case 'no-license':
             infoMessage = 'A license is required to use Ask Airy.';
     }
 
     return <>
         <Box className='centered-premium-container'>
-            <Text size='large' maxWidth='450px' marginBottom='1rem'>
-                {
-                    licenseStatus === 'free'
-                        ? <>{infoMessage}
-                            <Link target="_blank" size='large' style={{display: "inline"}}
-                                  href='https://www.zoftware-solutions.com/l/ask-airy'>
-                                &nbsp;All licenses come with a 1 week free trial!
-                            </Link>
-                        </>
-                        : {infoMessage}
-                }
-            </Text>
+            <Box>{
+                licenseStatus === 'no-license'
+                    ? <Box display='flex' justifyContent='center' alignContent='center' alignItems='center' flexWrap='wrap'>
+                        <Text size='large'>A license is required to use Ask Airy.
+                        </Text>
+                        <Link
+                            size='large'
+                            style={{display: 'inline'}}
+                            href='https://www.zoftware-solutions.com/l/ask-airy'
+                            target='_blank'
+                        >&nbsp;<Button margin={3}
+                                       style={{padding: '0.5rem'}}
+                                       variant='primary'
+                                       size='small'>
+                            Start Free Trial
+                        </Button>
+                        </Link>
+                    </Box>
+                    : <Text size='large' maxWidth='450px' marginBottom='1rem'>{infoMessage}</Text>
+            }</Box>
             <Box className='premium-form'>
                 <FormField
                     className='premium-form-field'
@@ -186,11 +194,11 @@ export const License = ({
                     }>
                     <Box className='premium-input-box'>
                         <Input value={licenseKey}
-                               disabled={licenseStatus !== 'free' || licenseUpdatePending}
+                               disabled={licenseStatus !== 'no-license' || licenseUpdatePending}
                                placeholder='Enter license key here..'
                                onChange={e => setLicenseKey(e.target.value)} type='text'></Input>
                         {
-                            licenseStatus !== 'free'
+                            licenseStatus !== 'no-license'
                                 ? <Button variant='default'
                                           className='premium-submit-button'
                                           type='submit'
@@ -213,16 +221,6 @@ export const License = ({
                         bases and can only be redeemed once.</Text></Box>
                 </FormField>
                 <Toast containerId={licenseToastContainerId}/>
-                <Box marginTop={3} display='flex' alignContent='center' justifyContent='center'>
-                    <Link
-                        href="https://www.zoftware-solutions.com/l/ask-airy"
-                        target="_blank">
-                        <Button variant='primary'>
-                            {/*TODO: Show different message here if user already has a license? */}
-                            Start your Free Trial!
-                        </Button>
-                    </Link>
-                </Box>
             </Box>
         </Box>
     </>

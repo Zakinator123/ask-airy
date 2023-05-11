@@ -1,4 +1,4 @@
-import {ExtensionConfiguration, AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
+import {AiryTableConfigWithDefinedDataIndexField, ExtensionConfiguration} from "../types/ConfigurationTypes";
 import React from "react";
 import {Box, loadCSSFromString, Text} from "@airtable/blocks/ui";
 import {AirtableMutationService} from "../services/AirtableMutationService";
@@ -7,7 +7,7 @@ import {AskAiryService} from "../services/AskAiryService";
 import {OpenAIService} from "../services/OpenAIService";
 import {Base} from "@airtable/blocks/models";
 import {removeDeletedTablesAndFieldsFromAiryTableConfigs} from "../utils/RandomUtils";
-import {RequestRateLimiter} from "../utils/RequestRateLimiter";
+import {AIService} from "../types/CoreTypes";
 
 loadCSSFromString(`
 .centered-container {
@@ -29,7 +29,7 @@ loadCSSFromString(`
 `);
 
 const getValidatedAiryTableConfigs = (extensionConfiguration: ExtensionConfiguration | undefined):
-    { noValidAiryTables: false, configs: AiryTableConfigWithDefinedDataIndexField[] }
+    { noValidAiryTables: false, configs: AiryTableConfigWithDefinedDataIndexField[], aiService: AIService }
     | { noValidAiryTables: true, errorMessage: string } => {
 
     if (extensionConfiguration === undefined) {
@@ -38,6 +38,12 @@ const getValidatedAiryTableConfigs = (extensionConfiguration: ExtensionConfigura
             errorMessage: 'You must configure the extension in the settings tab before you can use it!'
         }
     }
+
+    const aiService = new OpenAIService(
+        extensionConfiguration.aiProvidersConfiguration.openai.apiKey,
+        extensionConfiguration.aiProvidersConfiguration.openai.embeddingModel,
+        3,
+        140000)
 
     const sanitizedConfigs = removeDeletedTablesAndFieldsFromAiryTableConfigs(extensionConfiguration.airyTableConfigs).airyTableConfigs;
     if (sanitizedConfigs.length === 0) {
@@ -68,42 +74,37 @@ const getValidatedAiryTableConfigs = (extensionConfiguration: ExtensionConfigura
         }
     }
 
-    return {noValidAiryTables: false, configs: configsWithIndexFields};
+    return {noValidAiryTables: false, configs: configsWithIndexFields, aiService: aiService};
 }
 
 const AskAiryWrapper = ({
-                           airtableMutationService,
-                           extensionConfiguration,
-                           isPremiumUser,
-                           askAiryIsPending,
-                           setAskAiryIsPending,
-                           base
-                       }:
-                           {
-                               airtableMutationService: AirtableMutationService,
-                               extensionConfiguration: ExtensionConfiguration | undefined,
-                               isPremiumUser: boolean,
-                               askAiryIsPending: boolean,
-                               setAskAiryIsPending: (pending: boolean) => void,
-                               base: Base
-                           }) => {
+                            airtableMutationService,
+                            extensionConfiguration,
+                            isLicensedUser,
+                            askAiryIsPending,
+                            setAskAiryIsPending,
+                            base
+                        }:
+                            {
+                                airtableMutationService: AirtableMutationService,
+                                extensionConfiguration: ExtensionConfiguration | undefined,
+                                isLicensedUser: boolean,
+                                askAiryIsPending: boolean,
+                                setAskAiryIsPending: (pending: boolean) => void,
+                                base: Base
+                            }) => {
 
     const validatedAiryTableConfigs = getValidatedAiryTableConfigs(extensionConfiguration);
 
     return validatedAiryTableConfigs.noValidAiryTables
         ? <Box className='centered-container'>
-            <Text>{validatedAiryTableConfigs.errorMessage}</Text>
+            <Text size='large'>{validatedAiryTableConfigs.errorMessage}</Text>
         </Box>
         : <AskAiry
+            isLicensedUser={isLicensedUser}
             askAiryIsPending={askAiryIsPending}
-            setAskAiIsPending={setAskAiryIsPending}
-            askAiService={
-                new AskAiryService(
-                    new OpenAIService(extensionConfiguration!.aiProvidersConfiguration.openai.apiKey,
-                        extensionConfiguration!.aiProvidersConfiguration.openai.embeddingModel,
-                        60,
-                        240000),
-                    new AirtableMutationService(new RequestRateLimiter(14, 1100)))}
+            setAskAiryIsPending={setAskAiryIsPending}
+            askAiryService={new AskAiryService(validatedAiryTableConfigs.aiService, airtableMutationService)}
             airyTableConfigs={validatedAiryTableConfigs.configs}
             base={base}
         />

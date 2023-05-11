@@ -122,9 +122,6 @@ ol, ul {
 }
 `);
 
-
-// TODO: Require License to use the extension
-
 export function ExtensionWithSettings({
                                           airtableMutationService,
                                           licenseVerificationService
@@ -135,14 +132,13 @@ export function ExtensionWithSettings({
     const globalConfigSettingsService = new GlobalConfigSettingsService(globalConfig, base);
 
     const extensionConfig: ExtensionConfiguration | undefined = globalConfigSettingsService.getExtensionConfigurationFromGlobalConfig();
-
     const [premiumUpdatePending, setPremiumUpdatePending] = useState(false);
     const [configurationUpdatePending, setConfigurationUpdatePending] = useState(false);
     const [transactionIsProcessing, setTransactionIsProcessing] = useState<boolean>(false);
 
     const license: string | undefined = (globalConfig.get('license') as string | undefined);
-    const premiumLicenseDefined: boolean = license !== undefined;
-    const [premiumStatus, setPremiumStatus] = useState<LicenseStatus>(premiumLicenseDefined ? 'premium' : 'free');
+    const licenseDefined: boolean = license !== undefined;
+    const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(licenseDefined ? 'license-active' : 'no-license');
 
     const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 1 : 0);
 
@@ -152,8 +148,8 @@ export function ExtensionWithSettings({
         if (license !== undefined) {
             licenseVerificationService.verifyLicense(license, false)
                 .then((result) => {
-                    setPremiumStatus(result.premiumStatus);
-                    if (result.premiumStatus !== 'premium') {
+                    setLicenseStatus(result.licenseStatus);
+                    if (result.licenseStatus !== 'license-active') {
                         toast.error(result.message, {
                             containerId: 'topLevelToast',
                             autoClose: 10000
@@ -206,7 +202,7 @@ export function ExtensionWithSettings({
                         <AskAiryWrapper
                             airtableMutationService={airtableMutationService}
                             extensionConfiguration={extensionConfig}
-                            isPremiumUser={premiumStatus === 'premium'}
+                            isLicensedUser={licenseStatus === 'license-active'}
                             askAiryIsPending={transactionIsProcessing}
                             setAskAiryIsPending={setTransactionIsProcessing}
                             base={base}
@@ -225,8 +221,8 @@ export function ExtensionWithSettings({
             <TabPanel>
                 <License
                     licenseVerificationService={licenseVerificationService}
-                    licenseStatus={premiumStatus}
-                    setLicenseStatus={setPremiumStatus}
+                    licenseStatus={licenseStatus}
+                    setLicenseStatus={setLicenseStatus}
                     licenseUpdatePending={premiumUpdatePending}
                     setLicenseUpdatePending={setPremiumUpdatePending}
                     globalConfig={globalConfig}

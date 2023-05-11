@@ -91,7 +91,8 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
     return <>
         {addTableDialogOpen &&
             <ConfirmationDialog
-                title=""
+                width='550px'
+                title="Add Table to Ask Airy"
                 body={tablePicker}
                 confirmButtonText="Add Table"
                 onCancel={() => setAddTableDialogOpen(false)}

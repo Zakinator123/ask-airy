@@ -5,6 +5,7 @@ import {
     FormField,
     Heading,
     Icon,
+    Link,
     Loader,
     RecordCardList,
     Select,
@@ -29,23 +30,22 @@ function StreamedAIResponse({aiResponse, setAskAIPending}: {
         setAskAIPending(false);
     }
 
-    const dataWithNewlines = data.split('\n').map((line, index) => (
-        <Text key={index}>{line}</Text>
-    ))
-
+    const dataWithNewlines = data.split('\n').map((line, index) => (<Text key={index}>{line}</Text>))
     return <Box padding={2}>{dataWithNewlines}</Box>
 }
 
 export const AskAiry = ({
+                            isLicensedUser,
                             askAiryIsPending,
-                            setAskAiIsPending,
-                            askAiService,
+                            setAskAiryIsPending,
+                            askAiryService,
                             airyTableConfigs,
                             base
                         }: {
+    isLicensedUser: boolean,
     askAiryIsPending: boolean,
-    setAskAiIsPending: (pending: boolean) => void,
-    askAiService: AskAiryServiceInterface,
+    setAskAiryIsPending: (pending: boolean) => void,
+    askAiryService: AskAiryServiceInterface,
     airyTableConfigs: AiryTableConfigWithDefinedDataIndexField[],
     base: Base
 }) => {
@@ -59,7 +59,7 @@ export const AskAiry = ({
 
     return (
         <Box style={{
-            padding: '3rem',
+            padding: '2rem',
             gap: '1.5rem',
             display: 'flex',
             flexDirection: 'column',
@@ -67,14 +67,32 @@ export const AskAiry = ({
             maxWidth: '600px',
             width: '100%'
         }}>
+            {!isLicensedUser &&
+                <Box display='flex' justifyContent='center' alignContent='center' alignItems='center' flexWrap='wrap'>
+                    <Text size='large'>A license is required to use Ask Airy.
+                    </Text>
+                        <Link
+                            size='large'
+                            style={{display: 'inline'}}
+                            href='https://www.zoftware-solutions.com/l/ask-airy'
+                            target='_blank'
+                        >&nbsp;<Button margin={3}
+                                       style={{padding: '0.5rem'}}
+                                       variant='primary'
+                                       size='small'>
+                            Start Free Trial
+                        </Button>
+                        </Link>
+                </Box>
+            }
             <Box>
                 <FormField label='What do you want to ask Airy about?'>
                     <Select
                         disabled={askAiryIsPending}
-                        options={airyTableConfigs.map(airyTableConfig => ({
+                        options={[{value: undefined, label: ''}, ...airyTableConfigs.map(airyTableConfig => ({
                             value: airyTableConfig.table.id,
                             label: airyTableConfig.table.name
-                        }))}
+                        }))]}
                         value={selectedTable && selectedTable.id}
                         onChange={(tableId) => {
                             tableId && setSelectedTable(base.getTableByIdIfExists(tableId as string) ?? undefined);
@@ -85,18 +103,18 @@ export const AskAiry = ({
 
             {selectedTable &&
                 <Box>
-                    <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View' fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
-                        <ViewPicker
-                            shouldAllowPickingNone={true}
-                            allowedTypes={[ViewType.GRID]}
-                            table={selectedTable}
-                            view={selectedView}
-                            onChange={newView => setSelectedView(newView ?? undefined)}
-                        />
+                    <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
+                                               fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
+                    <ViewPicker
+                        shouldAllowPickingNone={true}
+                        allowedTypes={[ViewType.GRID]}
+                        table={selectedTable}
+                        view={selectedView}
+                        onChange={newView => setSelectedView(newView ?? undefined)}
+                    />
                 </Box>
             }
 
-            {/*// TODO: Add View Filter*/}
             {/*// TODO: Add ability to Ask Airy not about tables.*/}
             {/**/}
             {/*// TODO: Add guide dialog for how best to use Ask Airy - guide should mention that Airy is not a chatbot and will not remember prev questions.*/}
@@ -115,12 +133,13 @@ export const AskAiry = ({
                 fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
                 {selectedTable
                     ? <AskAiryButton
+                        isLicensedUser={isLicensedUser}
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
                         setStatusMessage={setStatusMessage}
                         setAIResponse={setAiryResponse}
                         askAiryIsPending={askAiryIsPending}
-                        setAskAiryIsPending={setAskAiIsPending}
-                        askAiryService={askAiService}
+                        setAskAiryIsPending={setAskAiryIsPending}
+                        askAiryService={askAiryService}
                         airyTableConfig={(airyTableConfigs
                             // TODO: Make sure there are no edge cases here.
                             .find(airyTableConfig => airyTableConfig.table.id === selectedTable.id) as AiryTableConfigWithDefinedDataIndexField)}
@@ -137,7 +156,6 @@ export const AskAiry = ({
             </Box>}
 
             {AiryResponse &&
-                // TODO: Make tooltip say users should verify the results themselves
                 <Box>
                     <Heading display='inline-block'>Airy's Response </Heading>
                     <Tooltip
@@ -158,7 +176,7 @@ export const AskAiry = ({
                     {
                         typeof AiryResponse === 'string'
                             ? <Text>{AiryResponse}</Text>
-                            : <StreamedAIResponse setAskAIPending={setAskAiIsPending} aiResponse={AiryResponse}/>
+                            : <StreamedAIResponse setAskAIPending={setAskAiryIsPending} aiResponse={AiryResponse}/>
                     }
                 </Box>
             }

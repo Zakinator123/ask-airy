@@ -3,24 +3,17 @@ import {
     Box,
     Button,
     FieldIcon,
-    FormField,
     Heading,
     Icon,
-    Input, Link,
+    Input,
+    Link,
     loadCSSFromString,
     Loader,
-    Select,
-    SelectButtons,
     Text,
     Tooltip
 } from "@airtable/blocks/ui";
 import {Base} from "@airtable/blocks/models";
-import {
-    AIProviderName,
-    ExtensionConfiguration,
-    OpenAIEmbeddingModel,
-    AiryTableConfig,
-} from "../types/ConfigurationTypes";
+import {AiryTableConfig, ExtensionConfiguration,} from "../types/ConfigurationTypes";
 import {Id, toast} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import {
@@ -34,6 +27,7 @@ import {AiryTableConfigDialog} from "./AiryTableConfigDialog";
 import {Toast} from "./Toast";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 import {aiProviderData, defaultConfig} from "../types/Constants";
+import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 
 loadCSSFromString(`
 .settings-container {
@@ -45,7 +39,6 @@ loadCSSFromString(`
     overflow: auto;
     height: 100%;
     width: 100%;
-    max-width: fit-content;
     align-items: center;
 }
 
@@ -157,17 +150,20 @@ export const Settings = ({
                  className='ai-config-container'>
                 <Heading marginBottom={3}>Airy AI Settings</Heading>
 
-                    {/*<SelectButtons*/}
-                    {/*    value={aiProviderName}*/}
-                    {/*    onChange={newValue => setAiProviderName(newValue as AIProviderName)}*/}
-                    {/*    options={*/}
-                    {/*        [{*/}
-                    {/*            value: "openai",*/}
-                    {/*            label: `${aiProviderData["openai"].prettyName}`*/}
-                    {/*        }]}*/}
-                    {/*/>*/}
+                {/*<SelectButtons*/}
+                {/*    value={aiProviderName}*/}
+                {/*    onChange={newValue => setAiProviderName(newValue as AIProviderName)}*/}
+                {/*    options={*/}
+                {/*        [{*/}
+                {/*            value: "openai",*/}
+                {/*            label: `${aiProviderData["openai"].prettyName}`*/}
+                {/*        }]}*/}
+                {/*/>*/}
 
-                <FormField label={`${aiProviderData[aiProviderName].prettyName} API Key`}>
+                <Box width='100%'>
+
+                    <FormFieldLabelWithTooltip fieldLabel={`${aiProviderData[aiProviderName].prettyName} API Key`}
+                                               fieldLabelTooltip='Ask Airy uses the OpenAI API under the hood.'/>
                     <Input
                         placeholder={`Enter your ${aiProviderData[aiProviderName].prettyName} API key`}
                         type='text'
@@ -180,7 +176,10 @@ export const Settings = ({
                             });
                         }}
                     />
-                </FormField>
+                    <Text margin={1} size='small'>Sign up to get an API key <Link size='small'
+                                                                                  href='https://platform.openai.com/signup'
+                                                                                  target='_blank'>here.</Link></Text>
+                </Box>
 
                 {/*<details>*/}
                 {/*    <summary>Advanced Configuration</summary>*/}

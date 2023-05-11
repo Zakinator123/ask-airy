@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import {Button, useRecords} from "@airtable/blocks/ui";
 import {AskAiryServiceInterface, AskAiryTable} from "../types/CoreTypes";
 import {Record, View} from "@airtable/blocks/models";
@@ -8,6 +8,7 @@ import {toast} from "react-toastify";
 
 
 export const AskAiryButton = ({
+                                  isLicensedUser,
                                   askAiryIsPending,
                                   setStatusMessage,
                                   setNumRelevantRecordsUsedInAiAnswer,
@@ -19,6 +20,7 @@ export const AskAiryButton = ({
                                   selectedView,
                                   query
                               }: {
+    isLicensedUser: boolean,
     askAiryIsPending: boolean,
     setStatusMessage: (message: string) => void,
     setNumRelevantRecordsUsedInAiAnswer: (numRecords: number) => void,
@@ -30,7 +32,7 @@ export const AskAiryButton = ({
     selectedView: View | undefined,
     query: string
 }) => {
-
+    useEffect(() => () => toast.dismiss(), []);
     const tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
     const records = useRecords(tableOrViewForAskAiry);
 
@@ -124,7 +126,14 @@ export const AskAiryButton = ({
     return <>
         <Button disabled={askAiryIsPending || query.length === 0}
                 variant='primary'
-                onClick={executeAskAiry}>
+                onClick={() => {
+                    isLicensedUser
+                        ? executeAskAiry()
+                        : toast.error('You must have a license to use Ask Airy. See the License tab for more details.', {
+                            autoClose: 10000,
+                            containerId: 'ask-airy-error'
+                        });
+                }}>
             Ask Airy
         </Button>
         <Toast containerId='ask-airy-error'/>

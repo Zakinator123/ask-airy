@@ -28,23 +28,23 @@ export class GumroadLicenseVerificationService {
         });
     }
 
-    verifyLicense = async (license: string, incrementUsesCount: boolean): Promise<{ premiumStatus: LicenseStatus, message: string }> => {
+    verifyLicense = async (license: string, incrementUsesCount: boolean): Promise<{ licenseStatus: LicenseStatus, message: string }> => {
         let verificationResponse: Response;
         try {
             verificationResponse = await this.verifyGumroadLicense(license, incrementUsesCount);
         } catch (e) {
             return {
-                premiumStatus: "unable-to-verify",
+                licenseStatus: "unable-to-verify",
                 message: 'Unable to verify license. Please check your internet connection and reload the extension.'
             };
         }
 
         if (verificationResponse.status === 404) {
-            return {premiumStatus: "invalid", message: 'Invalid license. Please check your license key and try again.'};
+            return {licenseStatus: "invalid", message: 'Invalid license. Please check your license key and try again.'};
         }
 
         if (verificationResponse.status !== 200) {
-            return {premiumStatus: "unable-to-verify", message: 'Unable to verify license. The license verification service is not responding as expected. Please try again later or contact the developer for support.'};
+            return {licenseStatus: "unable-to-verify", message: 'Unable to verify license. The license verification service is not responding as expected. Please try again later or contact the developer for support.'};
         }
 
         try {
@@ -52,14 +52,14 @@ export class GumroadLicenseVerificationService {
 
             if (responseJson.success === false) {
                 return {
-                    premiumStatus: "invalid",
+                    licenseStatus: "invalid",
                     message: 'Invalid license. Please check your license key and try again.'
                 };
             }
 
             if (responseJson.uses >= 2) {
                 return {
-                    premiumStatus: 'invalid',
+                    licenseStatus: 'invalid',
                     message: 'Your license has already been redeemed. Licenses can only be redeemed once.'
                 };
             }
@@ -67,16 +67,16 @@ export class GumroadLicenseVerificationService {
             const [subscriptionEndedAt, subscriptionCancelledAt, subscriptionFailedAt] = [responseJson.purchase.subscription_ended_at, responseJson.purchase.subscription_cancelled_at, responseJson.purchase.subscription_failed_at]
             if (subscriptionEndedAt !== null || subscriptionCancelledAt !== null || subscriptionFailedAt !== null) {
                 return {
-                    premiumStatus: 'expired',
+                    licenseStatus: 'expired',
                     message: 'Your license subscription is no longer active. Restart your existing subscription or purchase and verify a new subscription license to continue using Ask Airy.'
                 };
 
             }
 
         } catch (e) {
-            return {premiumStatus: "unable-to-verify", message: 'Unable to verify license. An issue occurred while parsing the license verification response. Please try again later or contact the developer for support.'};
+            return {licenseStatus: "unable-to-verify", message: 'Unable to verify license. An issue occurred while parsing the license verification response. Please try again later or contact the developer for support.'};
         }
 
-        return {premiumStatus: "premium", message: 'License verified! You can now use Ask Airy! 🎉🎉'};
+        return {licenseStatus: "license-active", message: 'License verified! You can now use Ask Airy! 🎉🎉'};
     }
 }
