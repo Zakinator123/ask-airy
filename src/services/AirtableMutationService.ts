@@ -7,7 +7,7 @@ import {RecordToUpdate} from "../types/OtherTypes";
 
 export class AirtableMutationService {
     private readonly _rateLimiter: RequestRateLimiter;
-    private readonly BATCH_SIZE = 48;
+    private readonly BATCH_SIZE = 40;
 
     constructor(rateLimiter: RequestRateLimiter) {
         this._rateLimiter = rateLimiter;

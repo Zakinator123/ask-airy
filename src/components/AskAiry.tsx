@@ -20,16 +20,11 @@ import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTy
 import useReadableStream from "../utils/UseReadableStream";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 
-function StreamedAIResponse({aiResponse, setAskAIPending}: {
+function StreamedAIResponse({aiResponse, setAskAiryIsPending}: {
     aiResponse: ReadableStream<Uint8Array>,
-    setAskAIPending: (pending: boolean) => void
+    setAskAiryIsPending: (pending: boolean) => void
 }) {
-    const {data, error, streamIsOpen} = useReadableStream(aiResponse);
-
-    if (streamIsOpen === false) {
-        setAskAIPending(false);
-    }
-
+    const {data} = useReadableStream(aiResponse, setAskAiryIsPending);
     const dataWithNewlines = data.split('\n').map((line, index) => (<Text key={index}>{line}</Text>))
     return <Box padding={2}>{dataWithNewlines}</Box>
 }
@@ -69,20 +64,19 @@ export const AskAiry = ({
         }}>
             {!isLicensedUser &&
                 <Box display='flex' justifyContent='center' alignContent='center' alignItems='center' flexWrap='wrap'>
-                    <Text size='large'>A license is required to use Ask Airy.
-                    </Text>
-                        <Link
-                            size='large'
-                            style={{display: 'inline'}}
-                            href='https://www.zoftware-solutions.com/l/ask-airy'
-                            target='_blank'
-                        >&nbsp;<Button margin={3}
-                                       style={{padding: '0.5rem'}}
-                                       variant='primary'
-                                       size='small'>
-                            Start Free Trial
-                        </Button>
-                        </Link>
+                    <Text size='large'>A license is required to use Ask Airy.</Text>
+                    <Link
+                        size='large'
+                        style={{display: 'inline'}}
+                        href='https://www.zoftware-solutions.com/l/ask-airy'
+                        target='_blank'
+                    >&nbsp;<Button margin={3}
+                                   style={{padding: '0.5rem'}}
+                                   variant='primary'
+                                   size='small'>
+                        Start Free Trial
+                    </Button>
+                    </Link>
                 </Box>
             }
             <Box>
@@ -101,7 +95,7 @@ export const AskAiry = ({
                 </FormField>
             </Box>
 
-            {selectedTable &&
+            {selectedTable && selectedTable.views.length > 1 &&
                 <Box>
                     <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
                                                fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
@@ -160,14 +154,25 @@ export const AskAiry = ({
                     <Heading display='inline-block'>Airy's Response </Heading>
                     <Tooltip
                         fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
-                        content={() => <Text margin='0.5rem 0.5rem 0.5rem 0.5rem' textColor='white' size='small'
-                        >
-                            {numRelevantRecordsUsedInAiryResponse == 0
-                                ? 'Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s responses with the actual data.'
-                                : <>{`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}<br/>
-                                    Airy may produce inaccurate information.<br/> Always crosscheck Airy's
-                                    responses with your actual data.</>}
-                        </Text>}
+                        content={() => numRelevantRecordsUsedInAiryResponse == 0
+                            ? <Text margin='0.5rem' as='span' size='small' textColor='white'>
+                                Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s
+                                responses with the actual data.
+                            </Text>
+                            : <>
+                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
+                                    {`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}
+                                </Text>
+                                <br/>
+                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
+                                    Airy may produce inaccurate information.
+                                </Text>
+                                <br/>
+                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
+                                    Always crosscheck Airy's responses with your actual data.
+                                </Text>
+                            </>
+                        }
                         placementX={Tooltip.placements.CENTER}
                         placementY={Tooltip.placements.TOP}>
                         <Icon position='relative' fillColor='red' name="info"
@@ -176,15 +181,16 @@ export const AskAiry = ({
                     {
                         typeof AiryResponse === 'string'
                             ? <Text>{AiryResponse}</Text>
-                            : <StreamedAIResponse setAskAIPending={setAskAiryIsPending} aiResponse={AiryResponse}/>
+                            : <StreamedAIResponse setAskAiryIsPending={setAskAiryIsPending} aiResponse={AiryResponse}/>
                     }
                 </Box>
             }
 
-            {searchResults &&
+            {searchResults && selectedTable &&
                 <Box height='500px'>
                     <Heading>Potentially Relevant Records:</Heading>
                     <RecordCardList
+                        fields={airyTableConfigs.find(airyTableConfig => airyTableConfig.table.id === selectedTable.id)?.airyFields ?? []}
                         height='500px'
                         style={{height: '500px'}}
                         records={searchResults}

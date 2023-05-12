@@ -7,10 +7,10 @@ export const FormFieldLabelWithTooltip = ({
                                               dangerous = false
                                           }: { fieldLabel: string, fieldLabelTooltip: string, dangerous?: boolean }) =>
     <Box marginBottom={1}>
-        <Text display='inline-block' textColor='gray'>{fieldLabel}</Text>
+        <Text as='span' display='inline-block' textColor='gray'>{fieldLabel}</Text>
         <Tooltip
             fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
-            content={() => <Text margin='0 0.5rem 0 0.5rem' textColor='white' size='small' display='inline'>{fieldLabelTooltip}</Text>}
+            content={() => <Text as='span' margin='0 0.5rem 0 0.5rem' textColor='white' size='small' display='inline'>{fieldLabelTooltip}</Text>}
             placementX={Tooltip.placements.CENTER}
             placementY={Tooltip.placements.TOP}>
             <Icon position='relative' top='1px' fillColor={dangerous ? 'red' : 'dark-gray'} name="info" size={12} marginLeft='0.25rem'/>

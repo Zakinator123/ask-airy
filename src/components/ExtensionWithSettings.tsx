@@ -122,6 +122,20 @@ ol, ul {
 }
 `);
 
+/*
+    TODO: Future improvements:
+        - Add voice-to-text for Ask Airy
+        - Add support for gpt 4
+        - Allow for tuning context data size vs. response size
+        - Add proxy support so that users don't need to bring their own key if they don't want to
+        - Add feature to disable search index updates so that people without edit access can search?
+        - Add feature to enable users to eject out of data indexing and search anyways
+        - Store vectors in vector DB uniquely identified by the user's license or base id instead of in Airtable
+
+
+        Features needed to ship:
+            - Add link to Airtable privacy policy
+ */
 export function ExtensionWithSettings({
                                           airtableMutationService,
                                           licenseVerificationService

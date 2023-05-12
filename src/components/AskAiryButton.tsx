@@ -34,7 +34,7 @@ export const AskAiryButton = ({
 }) => {
     useEffect(() => () => toast.dismiss(), []);
     const tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
-    const records = useRecords(tableOrViewForAskAiry);
+    const records = useRecords(tableOrViewForAskAiry, {fields: [airyTableConfig.dataIndexField.id, ...airyTableConfig.airyFields]});
 
     const airyTable: AskAiryTable = {
         table: airyTableConfig.table,
@@ -81,6 +81,9 @@ export const AskAiryButton = ({
                 progressMessageUpdaterForIndexUpdate(0);
 
                 updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForIndexUpdate);
+
+                const numFailures = updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures;
+
                 if (updateResult.airtableWriteSuccesses === 0) {
                     toast.error('The Airy Data Index could not be updated.' +
                         ' Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.' +
@@ -88,8 +91,8 @@ export const AskAiryButton = ({
                         containerId: 'ask-airy-error',
                         autoClose: 10000
                     });
-                } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
-                    toast.error(`Errors occurred while updating the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not updated successfully.
+                } else if (numFailures > 0) {
+                    toast.error(`Errors occurred while updating the Airy Data Index. Up to ${numFailures} records were not updated successfully.
                      Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.
                      If the issue persists, please contact support.`, {
                         autoClose: 10000,
