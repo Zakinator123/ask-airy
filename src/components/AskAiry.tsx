@@ -4,32 +4,21 @@ import {
     Button,
     FormField,
     Heading,
-    Icon,
-    Link,
     Loader,
     RecordCardList,
     Select,
     Text,
     TextButton,
-    Tooltip,
     ViewPicker
 } from "@airtable/blocks/ui";
 import {Base, Record, Table, View, ViewType} from "@airtable/blocks/models";
 import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAiryButton} from "./AskAiryButton";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
-import useReadableStream from "../utils/UseReadableStream";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import {Tips} from "./Tips";
-
-function StreamedAIResponse({aiResponse, setAskAiryIsPending}: {
-    aiResponse: ReadableStream<Uint8Array>,
-    setAskAiryIsPending: (pending: boolean) => void
-}) {
-    const {data} = useReadableStream(aiResponse, setAskAiryIsPending);
-    const dataWithNewlines = data.split('\n').map((line, index) => (<Text key={index}>{line}</Text>))
-    return <Box padding={2}>{dataWithNewlines}</Box>
-}
+import {AiryResponse} from "./AiryResponse";
+import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 
 export const AskAiry = ({
                             isLicensedUser,
@@ -65,23 +54,7 @@ export const AskAiry = ({
             maxWidth: '600px',
             width: '100%'
         }}>
-            {!isLicensedUser &&
-                <Box display='flex' justifyContent='center' alignContent='center' alignItems='center' flexWrap='wrap'>
-                    <Text size='large'>A license is required to use Ask Airy.</Text>
-                    <Link
-                        size='large'
-                        style={{display: 'inline'}}
-                        href='https://www.zoftware-solutions.com/l/ask-airy'
-                        target='_blank'
-                    >&nbsp;<Button margin={3}
-                                   style={{padding: '0.5rem'}}
-                                   variant='primary'
-                                   size='small'>
-                        Start Free Trial
-                    </Button>
-                    </Link>
-                </Box>
-            }
+            {!isLicensedUser && <LicenseRequiredMessage/>}
             <Box>
                 <FormField label='What do you want to ask Airy about?'>
                     <Select
@@ -112,7 +85,6 @@ export const AskAiry = ({
                 </Box>
             }
 
-            {/*// TODO: Fix bug of pasting in a query after another answer has been generated crashing app*/}
             <Box marginBottom={2}>
                 <FormField label='Query'>
                 <textarea
@@ -123,11 +95,13 @@ export const AskAiry = ({
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Ask Airy anything about your table..."
                 />
-                    <TextButton onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>Tips for using
-                        Ask Airy</TextButton>
+                    <TextButton onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
+                        Tips for using Ask Airy
+                    </TextButton>
                     <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
                 </FormField>
             </Box>
+
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
                 {selectedTable
@@ -154,42 +128,9 @@ export const AskAiry = ({
                 <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
             </Box>}
 
-            {airyResponse &&
-                <Box>
-                    <Heading display='inline-block'>Airy's Response </Heading>
-                    <Tooltip
-                        fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
-                        content={() => numRelevantRecordsUsedInAiryResponse == 0
-                            ? <Text margin='0.5rem' as='span' size='small' textColor='white'>
-                                Warning: Airy may produce inaccurate information. Always crosscheck Airy\'s
-                                responses with the actual data.
-                            </Text>
-                            : <>
-                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
-                                    {`Airy was able to use the top ${numRelevantRecordsUsedInAiryResponse} most relevant records to generate this response.`}
-                                </Text>
-                                <br/>
-                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
-                                    Airy may produce inaccurate information.
-                                </Text>
-                                <br/>
-                                <Text margin='0.5rem' as='span' size='small' textColor='white'>
-                                    Always crosscheck Airy's responses with your actual data.
-                                </Text>
-                            </>
-                        }
-                        placementX={Tooltip.placements.CENTER}
-                        placementY={Tooltip.placements.TOP}>
-                        <Icon position='relative' fillColor='red' name="info"
-                              size={16} marginLeft='0.25rem'/>
-                    </Tooltip>
-                    {
-                        typeof airyResponse === 'string'
-                            ? <Text>{airyResponse}</Text>
-                            : <StreamedAIResponse setAskAiryIsPending={setAskAiryIsPending} aiResponse={airyResponse}/>
-                    }
-                </Box>
-            }
+            {airyResponse && <AiryResponse airyResponse={airyResponse}
+                                           setAskAiryIsPending={setAskAiryIsPending}
+                                           numRelevantRecordsUsedInAiryResponse={numRelevantRecordsUsedInAiryResponse}/>}
 
             {searchResults && selectedTable &&
                 <Box height='500px'>

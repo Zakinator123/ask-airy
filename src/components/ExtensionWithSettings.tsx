@@ -140,6 +140,9 @@ ol, ul {
         - Create jekyll site for docs
         - Update gumroad license page
         - Cleanup console logging messages
+        - Fix bug of pasting in a query after another answer has been generated crashing app?'
+        - Turn on linting and fix all linting errors
+        - Rename premium classes in license component
 
         Future improvements:
         - Add voice-to-text for Ask Airy

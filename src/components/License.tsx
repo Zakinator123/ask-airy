@@ -7,6 +7,7 @@ import {OfflineToastMessage} from "./OfflineToastMessage";
 import {Toast} from "./Toast";
 import {GumroadLicenseVerificationService} from "../services/LicenseVerificationService";
 import {LicenseStatus} from "../types/OtherTypes";
+import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 
 loadCSSFromString(`
 .centered-premium-container {
@@ -167,22 +168,7 @@ export const License = ({
         <Box className='centered-premium-container'>
             <Box>{
                 licenseStatus === 'no-license'
-                    ? <Box display='flex' justifyContent='center' alignContent='center' alignItems='center' flexWrap='wrap'>
-                        <Text size='large'>A license is required to use Ask Airy.
-                        </Text>
-                        <Link
-                            size='large'
-                            style={{display: 'inline'}}
-                            href='https://www.zoftware-solutions.com/l/ask-airy'
-                            target='_blank'
-                        >&nbsp;<Button margin={3}
-                                       style={{padding: '0.5rem'}}
-                                       variant='primary'
-                                       size='small'>
-                            Start Free Trial
-                        </Button>
-                        </Link>
-                    </Box>
+                    ? <LicenseRequiredMessage/>
                     : <Text size='large' maxWidth='450px' marginBottom='1rem'>{infoMessage}</Text>
             }</Box>
             <Box className='premium-form'>
