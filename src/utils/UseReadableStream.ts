@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-
-interface UseReadableStreamResult {
-    data: string;
-}
+import {UseReadableStreamResult} from "../types/CoreTypes";
 
 const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAskAiryPending: (askAiryPending: boolean) => void): UseReadableStreamResult => {
     const [data, setData] = useState<string>('');

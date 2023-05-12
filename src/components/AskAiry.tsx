@@ -10,6 +10,7 @@ import {
     RecordCardList,
     Select,
     Text,
+    TextButton,
     Tooltip,
     ViewPicker
 } from "@airtable/blocks/ui";
@@ -19,6 +20,7 @@ import {AskAiryButton} from "./AskAiryButton";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import useReadableStream from "../utils/UseReadableStream";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
+import {Tips} from "./Tips";
 
 function StreamedAIResponse({aiResponse, setAskAiryIsPending}: {
     aiResponse: ReadableStream<Uint8Array>,
@@ -48,14 +50,15 @@ export const AskAiry = ({
     const [selectedView, setSelectedView] = useState<View | undefined>(undefined);
     const [searchResults, setSearchResults] = useState<Record[] | undefined>(undefined);
     const [statusMessage, setStatusMessage] = useState<string>('');
-    const [AiryResponse, setAiryResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
+    const [airyResponse, setAiryResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
     const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
+    const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
 
     return (
         <Box style={{
             padding: '2rem',
-            gap: '1.5rem',
+            gap: '1rem',
             display: 'flex',
             flexDirection: 'column',
             margin: 'auto',
@@ -96,7 +99,7 @@ export const AskAiry = ({
             </Box>
 
             {selectedTable && selectedTable.views.length > 1 &&
-                <Box>
+                <Box marginBottom={2}>
                     <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
                                                fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
                     <ViewPicker
@@ -109,11 +112,9 @@ export const AskAiry = ({
                 </Box>
             }
 
-            {/*// TODO: Add ability to Ask Airy not about tables.*/}
-            {/**/}
-            {/*// TODO: Add guide dialog for how best to use Ask Airy - guide should mention that Airy is not a chatbot and will not remember prev questions.*/}
             {/*// TODO: Fix bug of pasting in a query after another answer has been generated crashing app*/}
-            <FormField label='Query'>
+            <Box marginBottom={2}>
+                <FormField label='Query'>
                 <textarea
                     rows={2}
                     style={{padding: '0.5rem', backgroundColor: '#f2f2f2', border: "none", resize: "vertical"}}
@@ -122,7 +123,11 @@ export const AskAiry = ({
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Ask Airy anything about your table..."
                 />
-            </FormField>
+                    <TextButton onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>Tips for using
+                        Ask Airy</TextButton>
+                    <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
+                </FormField>
+            </Box>
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
                 {selectedTable
@@ -149,7 +154,7 @@ export const AskAiry = ({
                 <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
             </Box>}
 
-            {AiryResponse &&
+            {airyResponse &&
                 <Box>
                     <Heading display='inline-block'>Airy's Response </Heading>
                     <Tooltip
@@ -179,9 +184,9 @@ export const AskAiry = ({
                               size={16} marginLeft='0.25rem'/>
                     </Tooltip>
                     {
-                        typeof AiryResponse === 'string'
-                            ? <Text>{AiryResponse}</Text>
-                            : <StreamedAIResponse setAskAiryIsPending={setAskAiryIsPending} aiResponse={AiryResponse}/>
+                        typeof airyResponse === 'string'
+                            ? <Text>{airyResponse}</Text>
+                            : <StreamedAIResponse setAskAiryIsPending={setAskAiryIsPending} aiResponse={airyResponse}/>
                     }
                 </Box>
             }

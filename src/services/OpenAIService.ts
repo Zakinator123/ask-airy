@@ -32,7 +32,6 @@ type AIModelConfiguration = {
     maxContextWindowTokens: number,
 }
 
-// TODO: Cleanup embeddings and gpt3.5 max tokens code
 export class OpenAIService implements AIService {
     private openai
     private readonly embeddingModel: OpenAIEmbeddingModel;
@@ -55,7 +54,6 @@ export class OpenAIService implements AIService {
         this.embeddingModel = embeddingModel;
         this.chatModelConfiguration = {
             model: "gpt-3.5-turbo",
-            // TODO: Update context window calculations
             maxContextWindowTokens: 3700
         }
         this._maxRequests = _maxRequests;
@@ -133,7 +131,6 @@ export class OpenAIService implements AIService {
         const queryMessageTokenLength = 350/4;
 
         const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4 + relevantContextDataMessageTokenLength + queryMessageTokenLength) + 10;
-        // TODO: Parameterize this?
         const tokensAllocatedForAIResponse = 500;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 
@@ -217,8 +214,7 @@ export class OpenAIService implements AIService {
             }
         });
 
-        const tokenLimit = 130000;
-        const optimalNumTokensPerRequest = tokenLimit / 3;
+        const optimalNumTokensPerRequest = this._maxTokens / this._maxRequests;
 
         const embeddingsRequests: Array<EmbeddingsRequest> = [];
         for (const recordToEmbedWithTokensCounted of recordsToEmbedWithTokensCounted) {
@@ -263,17 +259,22 @@ export class OpenAIService implements AIService {
             numTokensInRequest: embeddingsRequest.numTokensInRecordsToEmbed
         }
 
-        const result = await this.requestAndTokenRateLimiter.returnRateAndTokenLimitedPromise(openAIEmbeddingsRequest);
+        try {
+            const result = await this.requestAndTokenRateLimiter.returnRateAndTokenLimitedPromise(openAIEmbeddingsRequest);
 
-        if (result instanceof Array) {
-            return result;
-        }
-        const errorMessage = `Error in embedding request:
+            if (result instanceof Array) {
+                return result;
+            }
+            const errorMessage = `Error in embedding request:
              Status: ${result.errorStatus}
              Response: ${result.errorResponse}
              Message: ${result.errorMessage}`;
-        console.error(errorMessage);
-        return undefined;
+            console.error(errorMessage);
+            return undefined;
+        } catch (error) {
+            console.error(error);
+            return undefined;
+        }
     }
 
     getEmbeddingForString = (query: string) => {

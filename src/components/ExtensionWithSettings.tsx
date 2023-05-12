@@ -123,23 +123,31 @@ ol, ul {
 `);
 
 /*
-    TODO: Future improvements:
+    TODO: PATH TO PROD:
+        - Check permission for updating search index for letting users click ask airy button
+        - Add feature to enable users to eject out of data indexing and search anyways
+        - Add ability to ask Airy about anything?
+        - Add guide dialog for tips on how to use ask airy: guide should mention that Airy is not a chatbot and will not remember prev questions.
+        - Test edge cases of 0 records in table, 0 tables
+        - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later?
+        - Cleanup embeddings and tokens calculation code
+        - Check for edit permissions before updating search index?
+        - Set temp to 0?
+        - Check for integrity of data during dot product search
+        - Fix issue of "record name" showing up awkwardly in response
+        - Make sure Ic.createContext error isn't happening in production
+        - Update about tab
+        - Create jekyll site for docs
+        - Update gumroad license page
+        - Cleanup console logging messages
+
+        Future improvements:
         - Add voice-to-text for Ask Airy
         - Add support for gpt 4
+        - Add support for using claude's giant context window
         - Allow for tuning context data size vs. response size
         - Add proxy support so that users don't need to bring their own key if they don't want to
-        - Add feature to disable search index updates so that people without edit access can search?
-        - Add feature to enable users to eject out of data indexing and search anyways
         - Store vectors in vector DB uniquely identified by the user's license or base id instead of in Airtable
-
-
-        Features needed to ship:
-            - Add link to Airtable privacy policy
-            - Set temp to 0?
-            - Fix issue of "record name" showing up awkwardly in response
-            - Make sure Ic.createContext error isn't happening in production
-            - Update about page
-            - improve "views" ui to be less awkward
  */
 export function ExtensionWithSettings({
                                           airtableMutationService,

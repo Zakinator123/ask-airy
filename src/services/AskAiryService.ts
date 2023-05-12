@@ -27,12 +27,14 @@ export class AskAiryService implements AskAiryServiceInterface {
         let numAirtableUpdateFailures = 0;
         let airtableWriteSuccesses = 0;
 
+
         const embeddingsRequests = this.aiService.getEmbeddingsRequestsForRecords(recordsToIndex);
 
         let currentAirtableWritePromise: Promise<any> | undefined = undefined;
         for (const embeddingsRequest of embeddingsRequests) {
             const embeddings = await this.aiService.getEmbeddings(embeddingsRequest);
             if (embeddings === undefined) {
+                console.log("1");
                 numEmbeddingFailures += embeddingsRequest.recordsToEmbed.length;
                 continue;
             }

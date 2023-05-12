@@ -80,3 +80,7 @@ export type AiryDataIndexUpdateResult = {
     airtableWriteSuccesses: number
 }
 
+export interface UseReadableStreamResult {
+    data: string;
+}
+

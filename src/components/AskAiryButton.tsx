@@ -101,6 +101,10 @@ export const AskAiryButton = ({
                 }
             }
         }
+
+
+        // Split out this part of the code so that when users eject out of indexing this won't be duplicated.
+
         setStatusMessage("Finding records relevant to your query...");
         // TODO: Make num results configurable
         // TODO: Test semantic search with empty table.
