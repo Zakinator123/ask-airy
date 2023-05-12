@@ -135,6 +135,11 @@ ol, ul {
 
         Features needed to ship:
             - Add link to Airtable privacy policy
+            - Set temp to 0?
+            - Fix issue of "record name" showing up awkwardly in response
+            - Make sure Ic.createContext error isn't happening in production
+            - Update about page
+            - improve "views" ui to be less awkward
  */
 export function ExtensionWithSettings({
                                           airtableMutationService,

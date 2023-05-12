@@ -164,11 +164,11 @@ export class AskAiryService implements AskAiryServiceInterface {
             const fields = airyFields.reduce((acc, field) => {
                 const fieldValue = record.getCellValueAsString(field.id)
                 if (fieldValue === '' || field.isPrimaryField) return acc;
-                acc.push(`${field.name}: ${fieldValue}`)
+                acc.push(`${field.name}:${fieldValue}`)
                 return acc;
             }, [] as string[])
 
-            return `"""Record name: ${record.name}, ${fields.join(', ')}"""`
+            return `"""${table.primaryField.name}:${record.name},${fields.join(', ')}"""`
         });
 
         // TODO: Handle array bounds with heap and slicing

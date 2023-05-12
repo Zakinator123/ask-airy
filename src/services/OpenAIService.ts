@@ -122,7 +122,7 @@ export class OpenAIService implements AIService {
         const aiModelConfiguration = this.chatModelConfiguration;
         const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
 
-        const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant named Airy that responds to user queries.
+        const systemMessage = cleanTemplateLiteral(`You are a helpful AI assistant named Airy embedded within an Airtable extension.
                 You have access to tabular data that is potentially relevant to the user's query.
                 If the query is a question, you should respond concisely with an answer that is based on the relevant context data if applicable.
                 If the relevant context data is not sufficient to answer the question, you should try to think step by step to infer an answer from the context data.
@@ -166,16 +166,15 @@ export class OpenAIService implements AIService {
                 role: "user",
                 content: cleanTemplateLiteral(`Here is my query delimited by triple quotes: """${query}""".
                   If applicable, answer the query based on the provided context data mention that your answer is only based on the top ${numRelevantRecords} 
-                  relevant records. If you use context data to answer the query and the record names are IDs, backup your statements by citing the relevant record name IDs.
+                  relevant records. If you use context data to answer the query, backup your statements by citing the relevant records in a readable way.
                   If the context data is irrelevant to the query, do not mention the context data.
-                  Structure your response with newlines or double newlines for readability. Be modest about what you know.
+                  Structure your response with newlines for readability. Be modest about what you know.
                   If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.`)
             }
         ];
 
         console.log("Airy Response Prompt:");
         console.log(messages);
-
 
         try {
             const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
@@ -184,7 +183,7 @@ export class OpenAIService implements AIService {
                     messages: messages,
                     model: aiModelConfiguration.model,
                     max_tokens: tokensAllocatedForAIResponse,
-                    temperature: 0.3,
+                    temperature: 0.1,
                     top_p: 1,
                     n: 1
                 },
