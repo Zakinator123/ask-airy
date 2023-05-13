@@ -1,9 +1,10 @@
 import {ChatCompletionRequestMessage, Configuration, OpenAIApi} from "openai";
 import {
+    AiryResponse,
+    AiryTableQueryResponse,
     AiryTableSchema,
     AIService,
     AIServiceError,
-    AITableQueryResponse,
     EmbeddingsRequest,
     RecordIndexData,
     RecordToIndex,
@@ -115,7 +116,7 @@ export class OpenAIService implements AIService {
     answerQueryGivenRelevantAirtableContext = async (query: string,
                                                      airyTableSchema: AiryTableSchema,
                                                      relevantContextData: string[]):
-        Promise<AITableQueryResponse> => {
+        Promise<AiryTableQueryResponse> => {
 
         const aiModelConfiguration = this.chatModelConfiguration;
         const maxContextWindowTokens = aiModelConfiguration.maxContextWindowTokens;
@@ -127,8 +128,8 @@ export class OpenAIService implements AIService {
                 If you still cannot answer the query, you may use your general knowledge to answer the question.`);
 
         const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}`);
-        const relevantContextDataMessageTokenLength = 250/4;
-        const queryMessageTokenLength = 350/4;
+        const relevantContextDataMessageTokenLength = 250 / 4;
+        const queryMessageTokenLength = 350 / 4;
 
         const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4 + relevantContextDataMessageTokenLength + queryMessageTokenLength) + 10;
         const tokensAllocatedForAIResponse = 500;
@@ -170,39 +171,12 @@ export class OpenAIService implements AIService {
             }
         ];
 
-        console.log("Airy Response Prompt:");
-        console.log(messages);
+        const response = await this.getStreamingChatCompletionResponse(messages, aiModelConfiguration, tokensAllocatedForAIResponse);
 
-        try {
-            const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
-                "chat",
-                {
-                    messages: messages,
-                    model: aiModelConfiguration.model,
-                    max_tokens: tokensAllocatedForAIResponse,
-                    temperature: 0.1,
-                    top_p: 1,
-                    n: 1
-                },
-                {
-                    apiKey: this.apiKey,
-                }
-            )
-
-            return {
-                errorOccurred: false,
-                aiResponse: streamedResponse,
-                numRelevantRecordsUsedByAI: relevantSerializedRecordsThatCanFitInContextWindow.length
-            };
-        } catch (error: any) {
-            if (error.response) {
-                console.error(error.response);
-                return {errorOccurred: true, message: `${error.response.status} ${error.response.data}`};
-            } else {
-                console.error(error);
-                return {errorOccurred: true, message: `${error}`};
-            }
-        }
+        return !response.errorOccurred ? {
+            ...response,
+            numRelevantRecordsUsedByAI: relevantSerializedRecordsThatCanFitInContextWindow.length
+        } : response;
     }
 
     getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
@@ -285,5 +259,60 @@ export class OpenAIService implements AIService {
             })
             .then((response) =>
                 response.data.data[0]!.embedding)
+    }
+
+    answerQueryAboutAnything = (query: string): Promise<AiryResponse> => {
+        const messages: ChatCompletionRequestMessage[] = [
+            {
+                role: "system",
+                content: cleanTemplateLiteral(`You are a helpful AI assistant named Airy embedded within an Airtable extension.
+                You concisely answer user queries using your general knowledge and are capable of doing complex tasks.
+                While you don't have access to any specific Airtable data, you should be able to write example Airtable scripts and formulas.
+                If the user's query seems to be about data within their Airtable base,
+                you must mention that you are answering from your general knowledge in addition to saying the following message delimited by triple quotes:
+                """If you would like me to answer a question related to your Airtable data, please select a table in the dropdown menu above."""`)
+            },
+            {
+                role: "user",
+                content: cleanTemplateLiteral(`Here is my query delimited by triple quotes: """${query}""".
+                   Be modest about what you know and answer concisely, but be as helpful as possible.
+                   If you are using general knowledge to answer the question, be sure to mention that you are using general
+                   knowledge and that I must select a table from the dropdown menu above if I would like to ask a question about my Airtable data.`)
+            }
+        ];
+
+        return this.getStreamingChatCompletionResponse(messages, this.chatModelConfiguration, this.chatModelConfiguration.maxContextWindowTokens);
+    }
+
+    private getStreamingChatCompletionResponse = async (messages: ChatCompletionRequestMessage[], aiModelConfiguration: AIModelConfiguration, maxTokens: number): Promise<AiryResponse> => {
+        try {
+            const streamedResponse: ReadableStream<Uint8Array> = await OpenAI(
+                "chat",
+                {
+                    messages: messages,
+                    model: aiModelConfiguration.model,
+                    max_tokens: maxTokens,
+                    temperature: 0.1,
+                    top_p: 1,
+                    n: 1
+                },
+                {
+                    apiKey: this.apiKey,
+                }
+            )
+
+            return {
+                errorOccurred: false,
+                streamingResponse: streamedResponse,
+            };
+        } catch (error: any) {
+            if (error.response) {
+                console.error(error.response);
+                return {errorOccurred: true, message: `${error.response.status} ${error.response.data}`};
+            } else {
+                console.error(error);
+                return {errorOccurred: true, message: `${error}`};
+            }
+        }
     }
 }

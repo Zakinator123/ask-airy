@@ -1,17 +1,26 @@
 import {Field, Record, Table} from "@airtable/blocks/models";
 import {RecordId} from "@airtable/blocks/dist/types/src/types/record";
 
-export type AITableQueryResponse = {
+export type AiryTableQueryResponse = {
     errorOccurred: false,
-    aiResponse: ReadableStream<Uint8Array>,
+    streamingResponse: ReadableStream<Uint8Array>,
     numRelevantRecordsUsedByAI: number
 } | {
     errorOccurred: true,
     message: string
 }
 
+export type AiryResponse = {
+    errorOccurred: false,
+    streamingResponse: ReadableStream<Uint8Array>,
+} | {
+    errorOccurred: true,
+    message: string
+}
+
 export interface AIService {
-    answerQueryGivenRelevantAirtableContext: (query: string, airyTableSchema: AiryTableSchema, relevantContextData: string[]) => Promise<AITableQueryResponse>,
+    answerQueryGivenRelevantAirtableContext: (query: string, airyTableSchema: AiryTableSchema, relevantContextData: string[]) => Promise<AiryTableQueryResponse>,
+    answerQueryAboutAnything: (query: string) => Promise<AiryResponse>,
     getEmbeddings: (embeddingsRequest: EmbeddingsRequest) => Promise<Array<RecordIndexData> | undefined>,
     getEmbeddingForString: (string: string) => Promise<Embedding>,
     getHypotheticalSearchResultGivenUserQuery: (airyTableSchema: AiryTableSchema, query: string) => Promise<string>,
@@ -22,8 +31,8 @@ export interface AskAiryServiceInterface {
     updateAiryDataIndexForTable: (askAiryTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>, dataIndexUpdateProgressUpdater: (numSuccesses: number) => void) => Promise<AiryDataIndexUpdateResult>,
     getRecordsWithStaleAiryIndexData: (askAiryTable: AskAiryTable) => Promise<Array<RecordToIndex>>,
     executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number) => Promise<Record[]>,
-    askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AITableQueryResponse>,
-    askAiryAboutAnything: (query: string) => Promise<string>,
+    askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AiryTableQueryResponse>,
+    askAiryAboutAnything: (query: string) => Promise<AiryResponse>,
 }
 
 export type Embedding = number[];

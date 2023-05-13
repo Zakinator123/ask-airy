@@ -5,20 +5,20 @@ import {
     AiryDataIndexUpdateResult,
     AiryIndexData,
     AIService,
-    AITableQueryResponse,
+    AiryTableQueryResponse,
     AskAiryServiceInterface,
     AskAiryTable,
-    RecordToIndex
+    RecordToIndex, AiryResponse
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecordForEmbeddings} from "../utils/RandomUtils";
 
 export class AskAiryService implements AskAiryServiceInterface {
-    private aiService;
-    private AirtableMutationService;
+    private aiService: AIService;
+    private AirtableMutationService: AirtableMutationService;
 
-    constructor(embeddingsService: AIService, AirtableMutationService: AirtableMutationService) {
-        this.aiService = embeddingsService;
+    constructor(aiService: AIService, AirtableMutationService: AirtableMutationService) {
+        this.aiService = aiService;
         this.AirtableMutationService = AirtableMutationService;
     }
 
@@ -160,7 +160,7 @@ export class AskAiryService implements AskAiryServiceInterface {
                                              recordsToAskAiryAbout,
                                              airyFields,
                                              table
-                                         }: AskAiryTable, query: string, relevantRecords: Record[]): Promise<AITableQueryResponse> => {
+                                         }: AskAiryTable, query: string, relevantRecords: Record[]): Promise<AiryTableQueryResponse> => {
 
         const serializedRecords = relevantRecords.map(record => {
             const fields = airyFields.reduce((acc, field) => {
@@ -182,7 +182,7 @@ export class AskAiryService implements AskAiryServiceInterface {
     };
 
 
-    askAiryAboutAnything(query: string): Promise<string> {
-        return Promise.resolve("");
+    askAiryAboutAnything = (query: string): Promise<AiryResponse> => {
+        return this.aiService.answerQueryAboutAnything(query);
     }
 }

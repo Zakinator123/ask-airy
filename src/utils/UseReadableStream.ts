@@ -7,9 +7,9 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
     useEffect(() => {
         if (!stream) {
             console.error('No stream provided to useReadableStream hook')
-            setAskAiryPending(false);
             return;
         }
+        setAskAiryPending(true);
 
         const reader = stream.getReader();
         const decoder = new TextDecoder('utf-8');

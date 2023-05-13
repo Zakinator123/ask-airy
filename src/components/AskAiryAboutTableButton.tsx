@@ -7,7 +7,7 @@ import {Toast} from "./Toast";
 import {toast} from "react-toastify";
 
 
-export const AskAiryButton = ({
+export const AskAiryAboutTableButton = ({
                                   isLicensedUser,
                                   askAiryIsPending,
                                   setStatusMessage,
@@ -15,7 +15,7 @@ export const AskAiryButton = ({
                                   setAskAiryIsPending,
                                   askAiryService,
                                   airyTableConfig,
-                                  setAIResponse,
+                                  setAiryResponse,
                                   setSearchResults,
                                   selectedView,
                                   query
@@ -27,7 +27,7 @@ export const AskAiryButton = ({
     setAskAiryIsPending: (pending: boolean) => void,
     askAiryService: AskAiryServiceInterface,
     airyTableConfig: AiryTableConfigWithDefinedDataIndexField,
-    setAIResponse: (response: ReadableStream | string | undefined) => void,
+    setAiryResponse: (response: ReadableStream | string | undefined) => void,
     setSearchResults: (results: Record[] | undefined) => void,
     selectedView: View | undefined,
     query: string
@@ -45,7 +45,7 @@ export const AskAiryButton = ({
 
     const executeAskAiry = async () => {
         setAskAiryIsPending(true);
-        setAIResponse(undefined);
+        setAiryResponse(undefined);
         setSearchResults(undefined);
         setStatusMessage('');
 
@@ -102,9 +102,7 @@ export const AskAiryButton = ({
             }
         }
 
-
         // Split out this part of the code so that when users eject out of indexing this won't be duplicated.
-
         setStatusMessage("Finding records relevant to your query...");
         // TODO: Make num results configurable
         // TODO: Test semantic search with empty table.
@@ -122,10 +120,10 @@ export const AskAiryButton = ({
         const aiResponse = await askAiryService.askAiryAboutRelevantRecords(airyTable, query, relevantRecords);
         setStatusMessage('');
         if (aiResponse.errorOccurred) {
-            setAIResponse(aiResponse.message);
+            setAiryResponse(aiResponse.message);
             setAskAiryIsPending(false);
         } else {
-            setAIResponse(aiResponse.aiResponse);
+            setAiryResponse(aiResponse.streamingResponse);
             setNumRelevantRecordsUsedInAiAnswer(aiResponse.numRelevantRecordsUsedByAI);
         }
     }
