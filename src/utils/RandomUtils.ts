@@ -2,6 +2,7 @@ import {Id, toast} from "react-toastify";
 import {AIProviderName, AiryTableConfig} from "../types/ConfigurationTypes";
 import {Record} from "@airtable/blocks/models";
 import {AiryTableSchema} from "../types/CoreTypes";
+import {embeddingsModelMaxTokens} from "../types/Constants";
 
 export function mapValues<T extends object, V>(obj: T, valueMapper: (k: keyof T, v: T[keyof T]) => V) {
     return Object.fromEntries(
@@ -93,12 +94,12 @@ export const removeDeletedTablesAndFieldsFromAiryTableConfigs = (airyTableConfig
     return {deletionOccurred: deletionOccurred, airyTableConfigs: newAiryTableConfigs};
 };
 
-// TODO: Truncate records here
 export const serializeRecordForEmbeddings = (record: Record, {airyFields, airyDataIndexField}: Omit<AiryTableSchema, 'table'>) => {
     const serializedFields = airyFields.reduce((serializedRecordData, currentField) => {
         const fieldValue = record.getCellValueAsString(currentField.id);
-        if (fieldValue !== '' && currentField.id !== airyDataIndexField.id && !currentField.isPrimaryField) {
-            return serializedRecordData + `${fieldValue},`;
+        const truncatedFieldValue = fieldValue.slice(0, Math.floor(embeddingsModelMaxTokens*4))
+        if (truncatedFieldValue !== '' && currentField.id !== airyDataIndexField.id && !currentField.isPrimaryField) {
+            return serializedRecordData + `${truncatedFieldValue},`;
         }
         return serializedRecordData;
     }, '');

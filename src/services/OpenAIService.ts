@@ -101,7 +101,6 @@ export class OpenAIService implements AIService {
             console.log(`Latency of gpt-3.5-turbo Hypothetical result generation is is: ${endTime2 - startTime2} ms`);
             console.log(`GPT 3.5 Turbo HyDE Response:`);
             const gpt35Response = response2.data.choices[0]!.message!.content!;
-            // console.log(gpt35Response);
             return gpt35Response;
         } catch (error: any) {
             console.error("Error in getHypotheticalSearchResultGivenUserQuery");
@@ -147,7 +146,7 @@ export class OpenAIService implements AIService {
 
         const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
 
-        const relevantContextDataMessage = cleanTemplateLiteral(`Here are the top ${numRelevantRecords} potentially relevant data records from the table.
+        const relevantContextDataMessage = cleanTemplateLiteral(`Here are the top ${numRelevantRecords} potentially most relevant data records from the table.
          There may be more relevant records, but only ${numRelevantRecords} could fit in your model's context window.
          Each record is delimited by triple quotes: ${relevantSerializedRecordsThatCanFitInContextWindow.join(' ')}`);
 
@@ -162,14 +161,19 @@ export class OpenAIService implements AIService {
             },
             {
                 role: "user",
-                content: cleanTemplateLiteral(`Here is my query delimited by triple quotes: """${query}""".
-                  If applicable, answer the query based on the provided context data mention that your answer is only based on the top ${numRelevantRecords} 
-                  relevant records. If you use context data to answer the query, backup your statements by citing the relevant records in a readable way.
-                  If the context data is irrelevant to the query, do not mention the context data.
+                content: cleanTemplateLiteral(`Here is my query delimited by triple double quotes: """${query}""".
+                  If my query is a question, answer based on the provided context data and mention that your answer is only based on the top ${numRelevantRecords} 
+                  most relevant records. If you use context data to answer the question, backup your statements by citing the relevant records in a readable way.
                   Structure your response with newlines for readability. Be modest about what you know.
-                  If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.`)
+                  If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.
+                  `)
             }
         ];
+
+        /*
+         If my query is a search query and the context data seems relevant, respond with the following message delimited by single quotes: 'Below are some search results that may be relevant to your query:'
+         If none of the context data is relevant to the search query, respond with the following message delimited by triple single quotes: '''I'm sorry, I could not find any relevant search results for your query.'''
+         */
 
         const response = await this.getStreamingChatCompletionResponse(messages, aiModelConfiguration, tokensAllocatedForAIResponse);
 
@@ -266,8 +270,8 @@ export class OpenAIService implements AIService {
             {
                 role: "system",
                 content: cleanTemplateLiteral(`You are a helpful AI assistant named Airy embedded within an Airtable extension.
-                You concisely answer user queries using your general knowledge and are capable of doing complex tasks.
-                While you don't have access to any specific Airtable data, you should be able to write example Airtable scripts and formulas.
+                You concisely answer user queries using your general knowledge and are capable of answering complex questions.
+                You should be able to write example Airtable scripts and formulas.
                 If the user's query seems to be about data within their Airtable base,
                 you must mention that you are answering from your general knowledge in addition to saying the following message delimited by triple quotes:
                 """If you would like me to answer a question related to your Airtable data, please select a table in the dropdown menu above."""`)

@@ -16,11 +16,11 @@ import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAiryAboutTableButton} from "./AskAiryAboutTableButton";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
-import {Tips} from "./Tips";
 import {AiryResponse} from "./AiryResponse";
 import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 import {TableId} from "@airtable/blocks/types";
 import {AskAiryAboutAnythingButton} from "./AskAiryAboutAnythingButton";
+import {Tips} from "./Tips";
 
 export const AskAiry = ({
                             isLicensedUser,
@@ -64,9 +64,15 @@ export const AskAiry = ({
         selectedTable = base.getTableByIdIfExists(askAiryTopic) ?? undefined;
         if (selectedTable !== undefined) {
             selectedTableConfig = airyTableConfigs.find(airyTableConfig => airyTableConfig.table.id === selectedTable!.id)
+
+
+
             if (selectedTableConfig !== undefined) {
                 askAiryButton =
-                    <Suspense fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
+                    <Suspense fallback={<Button disabled={true} variant='primary'><Loader position='relative' top='1px'
+                                                                                          fillColor='white'
+                                                                                          scale={0.2}/>&nbsp; Loading
+                        Records from the {selectedTableConfig.table.name} table...</Button>}>
                         <AskAiryAboutTableButton
                             isLicensedUser={isLicensedUser}
                             setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
@@ -85,67 +91,67 @@ export const AskAiry = ({
         }
     }
 
-    return (
-        <Box style={{
-            padding: '2rem',
-            gap: '1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            margin: 'auto',
-            maxWidth: '600px',
-            width: '100%'
-        }}>
-            {!isLicensedUser && <LicenseRequiredMessage/>}
-            <Box>
-                <FormField label='What do you want to ask Airy about?'>
-                    <Select
-                        disabled={askAiryIsPending}
-                        options={[
-                            {value: undefined, label: ''},
-                            {value: 'anything', label: 'Anything (unrelated to your Airtable data)'},
-                            ...airyTableConfigs.map(airyTableConfig => ({
-                                value: airyTableConfig.table.id,
-                                label: airyTableConfig.table.name
-                            }))]}
-                        value={askAiryTopic}
-                        onChange={(askAiryTopic) => {
-                            setAiryResponse(undefined);
-                            setNumRelevantRecordsUsedInAiryResponse(0);
-                            setSearchResults(undefined);
-                            setSelectedView(undefined);
-                            setStatusMessage('');
-                            setQuery('');
-                            setAskAiryTopic(askAiryTopic ? askAiryTopic as 'anything' | TableId : undefined);
-                        }}
-                    />
-                </FormField>
-            </Box>
-
-            {selectedTable && selectedTable.views.length > 1 &&
-                <Box marginBottom={2}>
-                    <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
-                                               fieldLabelTooltip='Views are helpful for limiting which records Airy finds and uses to answer your queries'/>
-                    <ViewPicker
-                        disabled={askAiryIsPending}
-                        shouldAllowPickingNone={true}
-                        allowedTypes={[ViewType.GRID]}
-                        placeholder={''}
-                        table={selectedTable}
-                        view={selectedView}
-                        onChange={newView => {
-                            setAiryResponse(undefined);
-                            setNumRelevantRecordsUsedInAiryResponse(0);
-                            setSearchResults(undefined);
-                            setStatusMessage('');
-                            setQuery('');
-                            setSelectedView(newView ?? undefined);
-                        }}
-                    />
+    return (<>
+            <Box style={{
+                padding: '2rem',
+                gap: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                margin: 'auto',
+                maxWidth: '500px',
+                width: '100%'
+            }}>
+                {!isLicensedUser && <LicenseRequiredMessage/>}
+                <Box>
+                    <FormField label='What do you want to ask Airy about?'>
+                        <Select
+                            disabled={askAiryIsPending}
+                            options={[
+                                {value: undefined, label: ''},
+                                {value: 'anything', label: 'Anything (unrelated to your Airtable data)'},
+                                ...airyTableConfigs.map(airyTableConfig => ({
+                                    value: airyTableConfig.table.id,
+                                    label: airyTableConfig.table.name
+                                }))]}
+                            value={askAiryTopic}
+                            onChange={(askAiryTopic) => {
+                                setAiryResponse(undefined);
+                                setNumRelevantRecordsUsedInAiryResponse(0);
+                                setSearchResults(undefined);
+                                setSelectedView(undefined);
+                                setStatusMessage('');
+                                setQuery('');
+                                setAskAiryTopic(askAiryTopic ? askAiryTopic as 'anything' | TableId : undefined);
+                            }}
+                        />
+                    </FormField>
                 </Box>
-            }
 
-            <Box marginBottom={2}>
-                <FormField label='Query'>
+                {selectedTable && selectedTable.views.length > 1 &&
+                    <Box marginBottom={2}>
+                        <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
+                                                   fieldLabelTooltip='Views are helpful for filtering the records Airy uses to answer your queries.'/>
+                        <ViewPicker
+                            disabled={askAiryIsPending}
+                            shouldAllowPickingNone={true}
+                            allowedTypes={[ViewType.GRID]}
+                            placeholder={''}
+                            table={selectedTable}
+                            view={selectedView}
+                            onChange={newView => {
+                                setAiryResponse(undefined);
+                                setNumRelevantRecordsUsedInAiryResponse(0);
+                                setSearchResults(undefined);
+                                setStatusMessage('');
+                                setQuery('');
+                                setSelectedView(newView ?? undefined);
+                            }}
+                        />
+                    </Box>
+                }
+
+                <Box marginBottom={2}>
+                    <FormField label='Query'>
                 <textarea
                     rows={2}
                     style={{
@@ -158,27 +164,28 @@ export const AskAiry = ({
                     disabled={askAiryIsPending}
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Ask Airy anything about your table..."
+                    placeholder="Ask Airy anything..."
                 />
-                    <TextButton margin={1} onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
-                        Tips for using Ask Airy
-                    </TextButton>
-                    <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
-                </FormField>
+                        <TextButton margin={1} onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
+                            Tips for using Ask Airy
+                        </TextButton>
+                        <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
+                    </FormField>
+                </Box>
+
+                {askAiryButton}
+
+                {statusMessage.length !== 0 && <Box display='flex' justifyContent='center'>
+                    <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
+                </Box>}
+
+                {airyResponse && <AiryResponse airyResponse={airyResponse}
+                                               setAskAiryIsPending={setAskAiryIsPending}
+                                               numRelevantRecordsUsedInAiryResponse={numRelevantRecordsUsedInAiryResponse}/>}
+
             </Box>
-
-            {askAiryButton}
-
-            {statusMessage.length !== 0 && <Box display='flex' justifyContent='center'>
-                <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
-            </Box>}
-
-            {airyResponse && <AiryResponse airyResponse={airyResponse}
-                                           setAskAiryIsPending={setAskAiryIsPending}
-                                           numRelevantRecordsUsedInAiryResponse={numRelevantRecordsUsedInAiryResponse}/>}
-
             {searchResults && selectedTableConfig &&
-                <Box height='500px'>
+                <Box width='85%' height='500px' marginBottom={5}>
                     <Heading>Potentially Relevant Records:</Heading>
                     <RecordCardList
                         fields={selectedTableConfig.airyFields}
@@ -188,6 +195,6 @@ export const AskAiry = ({
                     />
                 </Box>
             }
-        </Box>
+        </>
     )
 }

@@ -1,25 +1,25 @@
 import React, {useEffect} from "react";
 import {Button, useRecords} from "@airtable/blocks/ui";
 import {AskAiryServiceInterface, AskAiryTable} from "../types/CoreTypes";
-import {Record, View} from "@airtable/blocks/models";
+import {Record, Table, View} from "@airtable/blocks/models";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
 import {Toast} from "./Toast";
 import {toast} from "react-toastify";
 
 
 export const AskAiryAboutTableButton = ({
-                                  isLicensedUser,
-                                  askAiryIsPending,
-                                  setStatusMessage,
-                                  setNumRelevantRecordsUsedInAiAnswer,
-                                  setAskAiryIsPending,
-                                  askAiryService,
-                                  airyTableConfig,
-                                  setAiryResponse,
-                                  setSearchResults,
-                                  selectedView,
-                                  query
-                              }: {
+                                            isLicensedUser,
+                                            askAiryIsPending,
+                                            setStatusMessage,
+                                            setNumRelevantRecordsUsedInAiAnswer,
+                                            setAskAiryIsPending,
+                                            askAiryService,
+                                            airyTableConfig,
+                                            setAiryResponse,
+                                            setSearchResults,
+                                            selectedView,
+                                            query
+                                        }: {
     isLicensedUser: boolean,
     askAiryIsPending: boolean,
     setStatusMessage: (message: string) => void,
@@ -33,7 +33,8 @@ export const AskAiryAboutTableButton = ({
     query: string
 }) => {
     useEffect(() => () => toast.dismiss(), []);
-    const tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
+    let tableOrViewForAskAiry: View | Table;
+    tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
     const records = useRecords(tableOrViewForAskAiry, {fields: [airyTableConfig.dataIndexField.id, ...airyTableConfig.airyFields]});
 
     const airyTable: AskAiryTable = {
@@ -128,17 +129,19 @@ export const AskAiryAboutTableButton = ({
         }
     }
 
+    const clickAskAiryButton = async () => {
+        isLicensedUser
+            ? executeAskAiry()
+            : toast.error('You must have a license to use Ask Airy. See the License tab for more details.', {
+                autoClose: 10000,
+                containerId: 'ask-airy-error'
+            });
+    };
+
     return <>
         <Button disabled={askAiryIsPending || query.length === 0}
                 variant='primary'
-                onClick={() => {
-                    isLicensedUser
-                        ? executeAskAiry()
-                        : toast.error('You must have a license to use Ask Airy. See the License tab for more details.', {
-                            autoClose: 10000,
-                            containerId: 'ask-airy-error'
-                        });
-                }}>
+                onClick={clickAskAiryButton}>
             Ask Airy
         </Button>
         <Toast containerId='ask-airy-error'/>

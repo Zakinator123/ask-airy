@@ -19,3 +19,5 @@ export const defaultConfig: ExtensionConfiguration = {
     },
     airyTableConfigs: [],
 }
+
+export const embeddingsModelMaxTokens = 8192;

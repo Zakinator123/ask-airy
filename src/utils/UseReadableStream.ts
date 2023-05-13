@@ -27,9 +27,12 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
 
                 setData((prevData) => prevData + decoder.decode(value));
                 readData();
-            } catch (err: any) {
-                setData(JSON.stringify(err));
-                console.log(err);
+            } catch (err) {
+                const error = err as Error;
+                console.error(error);
+                reader.releaseLock();
+                setAskAiryPending(false);
+                setData(error.message);
             }
         };
 
@@ -37,7 +40,6 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
 
         return () => {
             stream.cancel();
-            setAskAiryPending(false);
         };
     }, [stream]);
 

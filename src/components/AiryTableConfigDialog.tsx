@@ -54,7 +54,6 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
                 newAiryTable && <>
                     <FormField label='Fields Airy Should Know About*'>
                         <Box display='flex' flexWrap='wrap' >
-                            {/*TODO: Warn users that any data longer than X tokens will be truncated in Airy's data index. */}
                             {newAiryTable.fields.map((field, index) => {
 
                                 for (const [, aiProviderOptions] of Object.entries(aiProviderData)) {
@@ -83,7 +82,9 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
                         </Box>
                     </FormField>
                     <Text marginTop={3} marginLeft={2} size='small' textColor='gray'>
-                        * Enabling unnecessary fields will decrease Airy's performance and response quality.</Text>
+                        * Enabling unnecessary fields will decrease Airy's performance and response quality.
+                        If the data in the enabled fields of a record add up to be more than ~6000 words of text,
+                        it will be truncated in Airy's data index to be less than ~6000 words.</Text>
                 </>}
             <Toast containerId='airyTablePickerToast' styles={{marginTop: '1rem'}}/>
         </Box>

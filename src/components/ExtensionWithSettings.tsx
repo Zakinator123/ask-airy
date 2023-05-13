@@ -126,23 +126,24 @@ ol, ul {
     TODO: PATH TO PROD:
         - Check permission for updating search index for letting users click ask airy button
         - Add feature to enable users to eject out of data indexing and search anyways
-        - Tweak prompts so that airy is more helpful and doesn't give up as easily.
-        - URGENT: AskAiryPending is NOT being correctly set when asking about data in table.
-        - URGENT: When completions fails (e.g. due to max tokens being exceeded, askAiry pending doesn't reset, and error message is not shown!!
-        - Add guide dialog for tips on how to use ask airy: guide should mention that Airy is not a chatbot and will not remember prev questions. Its particularly suited for NLP tasks and semantic search, but not numerical data analysis over the entire airtable
         - Test edge cases of 0 records in table, 0 tables
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later?
         - Cleanup embeddings and tokens calculation code
-        - Check for edit permissions before updating search index?
         - Set temp to 0? and take a look at top p?
         - Check for integrity of data during dot product search
-        - Fix issue of "record name" showing up awkwardly in response
         - Make sure Ic.createContext error isn't happening in production
+        - Fix bug of pasting in a query after another answer has been generated crashing app?'
+
+        ---- Documentation ----
+        - Add guide dialog for tips on how to use ask airy:
+            - include message saying that large tables may take a while to load and index with slow internet connections.
+            - guide should mention that using views will also decrease index building time.
+            - guide should mention that Airy is not a chatbot and will not remember prev questions.
+            - Its particularly suited for NLP tasks and semantic search, but not numerical data analysis over the entire airtable
         - Update about tab
         - Create jekyll site for docs
         - Update gumroad license page
         - Cleanup console logging messages
-        - Fix bug of pasting in a query after another answer has been generated crashing app?'
         - Turn on linting and fix all linting errors
         - Rename premium classes in license component
 

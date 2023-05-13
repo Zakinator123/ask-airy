@@ -1,6 +1,6 @@
 import React from 'react';
 import {Box, Heading, Icon, Text, Tooltip} from "@airtable/blocks/ui";
-import {StreamedAIResponse} from "./StreamedAiryResponse";
+import {StreamedAiryResponse} from "./StreamedAiryResponse";
 
 export const AiryResponse = ({airyResponse, numRelevantRecordsUsedInAiryResponse, setAskAiryIsPending}: {
     airyResponse: ReadableStream | string,
@@ -43,7 +43,7 @@ export const AiryResponse = ({airyResponse, numRelevantRecordsUsedInAiryResponse
         {
             typeof airyResponse === 'string'
                 ? <Text>{airyResponse}</Text>
-                : <StreamedAIResponse setAskAiryIsPending={setAskAiryIsPending} airyResponse={airyResponse}/>
+                : <StreamedAiryResponse setAskAiryIsPending={setAskAiryIsPending} airyResponse={airyResponse}/>
         }
     </Box>
 }
