@@ -19,6 +19,7 @@ import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 import {Tips} from "./Tips";
 import {AiryResponse} from "./AiryResponse";
 import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
+import {TableId} from "@airtable/blocks/types";
 
 export const AskAiry = ({
                             isLicensedUser,
@@ -35,7 +36,7 @@ export const AskAiry = ({
     airyTableConfigs: AiryTableConfigWithDefinedDataIndexField[],
     base: Base
 }) => {
-    const [selectedTable, setSelectedTable] = useState<Table | undefined>(undefined);
+    const [selectedTableId, setSelectedTableId] = useState<TableId | undefined>(undefined);
     const [selectedView, setSelectedView] = useState<View | undefined>(undefined);
     const [searchResults, setSearchResults] = useState<Record[] | undefined>(undefined);
     const [statusMessage, setStatusMessage] = useState<string>('');
@@ -43,6 +44,9 @@ export const AskAiry = ({
     const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
     const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
+
+    const selectedTable: Table | undefined = selectedTableId ? base.getTableByIdIfExists(selectedTableId) ?? undefined : undefined;
+    const selectedTableConfig: AiryTableConfigWithDefinedDataIndexField | undefined = selectedTable ? airyTableConfigs.find(airyTableConfig => airyTableConfig.table.id === selectedTable.id) : undefined;
 
     return (
         <Box style={{
@@ -59,13 +63,21 @@ export const AskAiry = ({
                 <FormField label='What do you want to ask Airy about?'>
                     <Select
                         disabled={askAiryIsPending}
-                        options={[{value: undefined, label: ''}, ...airyTableConfigs.map(airyTableConfig => ({
-                            value: airyTableConfig.table.id,
-                            label: airyTableConfig.table.name
-                        }))]}
-                        value={selectedTable && selectedTable.id}
+                        options={[
+                            {value: undefined, label: ''},
+                            ...airyTableConfigs.map(airyTableConfig => ({
+                                value: airyTableConfig.table.id,
+                                label: airyTableConfig.table.name
+                            }))]}
+                        value={selectedTableId}
                         onChange={(tableId) => {
-                            tableId && setSelectedTable(base.getTableByIdIfExists(tableId as string) ?? undefined);
+                            setAiryResponse(undefined);
+                            setNumRelevantRecordsUsedInAiryResponse(0);
+                            setSearchResults(undefined);
+                            setSelectedView(undefined);
+                            setStatusMessage('');
+                            setQuery('');
+                            setSelectedTableId(tableId ? tableId as string : undefined);
                         }}
                     />
                 </FormField>
@@ -74,13 +86,21 @@ export const AskAiry = ({
             {selectedTable && selectedTable.views.length > 1 &&
                 <Box marginBottom={2}>
                     <FormFieldLabelWithTooltip fieldLabel='(Optional) Select a View'
-                                               fieldLabelTooltip='Views can be helpful for limiting which records Airy uses to answer your queries'/>
+                                               fieldLabelTooltip='Views are helpful for limiting which records Airy finds and uses to answer your queries'/>
                     <ViewPicker
                         shouldAllowPickingNone={true}
                         allowedTypes={[ViewType.GRID]}
+                        placeholder={''}
                         table={selectedTable}
                         view={selectedView}
-                        onChange={newView => setSelectedView(newView ?? undefined)}
+                        onChange={newView => {
+                            setAiryResponse(undefined);
+                            setNumRelevantRecordsUsedInAiryResponse(0);
+                            setSearchResults(undefined);
+                            setStatusMessage('');
+                            setQuery('');
+                            setSelectedView(newView ?? undefined);
+                        }}
                     />
                 </Box>
             }
@@ -95,7 +115,7 @@ export const AskAiry = ({
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Ask Airy anything about your table..."
                 />
-                    <TextButton onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
+                    <TextButton margin={1} onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
                         Tips for using Ask Airy
                     </TextButton>
                     <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
@@ -104,7 +124,7 @@ export const AskAiry = ({
 
             <Suspense
                 fallback={<Button disabled={true} variant='primary'>Loading Records...</Button>}>
-                {selectedTable
+                {selectedTableConfig
                     ? <AskAiryButton
                         isLicensedUser={isLicensedUser}
                         setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
@@ -113,9 +133,7 @@ export const AskAiry = ({
                         askAiryIsPending={askAiryIsPending}
                         setAskAiryIsPending={setAskAiryIsPending}
                         askAiryService={askAiryService}
-                        airyTableConfig={(airyTableConfigs
-                            // TODO: Make sure there are no edge cases here.
-                            .find(airyTableConfig => airyTableConfig.table.id === selectedTable.id) as AiryTableConfigWithDefinedDataIndexField)}
+                        airyTableConfig={selectedTableConfig}
                         selectedView={selectedView}
                         setSearchResults={setSearchResults}
                         query={query}
@@ -132,11 +150,11 @@ export const AskAiry = ({
                                            setAskAiryIsPending={setAskAiryIsPending}
                                            numRelevantRecordsUsedInAiryResponse={numRelevantRecordsUsedInAiryResponse}/>}
 
-            {searchResults && selectedTable &&
+            {searchResults && selectedTableConfig &&
                 <Box height='500px'>
                     <Heading>Potentially Relevant Records:</Heading>
                     <RecordCardList
-                        fields={airyTableConfigs.find(airyTableConfig => airyTableConfig.table.id === selectedTable.id)?.airyFields ?? []}
+                        fields={selectedTableConfig.airyFields}
                         height='500px'
                         style={{height: '500px'}}
                         records={searchResults}

@@ -176,9 +176,12 @@ export const Settings = ({
                             });
                         }}
                     />
-                    <Text margin={1} size='small'>Sign up to get an API key <Link size='small'
-                                                                                  href='https://platform.openai.com/signup'
-                                                                                  target='_blank'>here.</Link></Text>
+                    <Text margin={1} size='small'>Sign up <Link size='small'
+                                                                href='https://platform.openai.com/signup'
+                                                                target='_blank'>here.</Link>
+                        &nbsp;Generate an API key <Link size='small' href='https://platform.openai.com/account/api-keys'
+                                                  target='_blank'>here.</Link>
+                    </Text>
                 </Box>
 
                 {/*<details>*/}
