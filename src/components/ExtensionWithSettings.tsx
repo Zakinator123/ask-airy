@@ -124,7 +124,6 @@ ol, ul {
 
 /*
     TODO: PATH TO PROD:
-        - Check permission for updating search index for letting users click ask airy button
         - Add feature to enable users to eject out of data indexing and search anyways
         - Test edge cases of 0 records in table, 0 tables
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later?
@@ -133,6 +132,7 @@ ol, ul {
         - Check for integrity of data during dot product search
         - Make sure Ic.createContext error isn't happening in production
         - Fix bug of pasting in a query after another answer has been generated crashing app?'
+        - If even 1 record is too big to fit in context window for final response - truncate the record - mention in the prompt that this happened?
 
         ---- Documentation ----
         - Add guide dialog for tips on how to use ask airy:

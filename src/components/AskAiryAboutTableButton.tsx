@@ -130,12 +130,16 @@ export const AskAiryAboutTableButton = ({
     }
 
     const clickAskAiryButton = async () => {
-        isLicensedUser
-            ? executeAskAiry()
-            : toast.error('You must have a license to use Ask Airy. See the License tab for more details.', {
+        if (!isLicensedUser) {
+            toast.error('You must have a license to use Ask Airy. See the License tab for more details.', {
                 autoClose: 10000,
                 containerId: 'ask-airy-error'
             });
+        } else if (!airyTableConfig.table.hasPermissionToUpdateRecord(undefined, {[airyTableConfig.dataIndexField.id]: undefined})) {
+            toast.error('You must have edit permissions on the Airy Data Index field to use Ask Airy.', {autoClose: 10000, containerId: 'ask-airy-error'});
+        } else {
+            executeAskAiry();
+        }
     };
 
     return <>
