@@ -55,7 +55,7 @@ export class OpenAIService implements AIService {
         this.embeddingModel = embeddingModel;
         this.chatModelConfiguration = {
             model: "gpt-3.5-turbo",
-            maxContextWindowTokens: 3700
+            maxContextWindowTokens: 3900
         }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
@@ -82,9 +82,6 @@ export class OpenAIService implements AIService {
             }
         ];
 
-        console.log("HyDE Prompt:");
-        console.log(messages);
-
         try {
             const performance2 = window.performance;
             const startTime2 = performance2.now();
@@ -93,13 +90,12 @@ export class OpenAIService implements AIService {
                 model: "gpt-3.5-turbo",
                 messages: messages,
                 max_tokens: 400 - calculateTokensInChatCompletionMessages(messages),
-                temperature: 0.3,
+                temperature: 0.4,
                 top_p: 1,
                 n: 1,
             })
             const endTime2 = performance2.now();
             console.log(`Latency of gpt-3.5-turbo Hypothetical result generation is is: ${endTime2 - startTime2} ms`);
-            console.log(`GPT 3.5 Turbo HyDE Response:`);
             const gpt35Response = response2.data.choices[0]!.message!.content!;
             return gpt35Response;
         } catch (error: any) {
@@ -127,10 +123,56 @@ export class OpenAIService implements AIService {
                 If you still cannot answer the query, you may use your general knowledge to answer the question.`);
 
         const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}`);
-        const relevantContextDataMessageTokenLength = 250 / 4;
-        const queryMessageTokenLength = 350 / 4;
 
-        const numTokensInPromptsWithoutContextRecords = Math.floor(systemMessage.length / 4 + schemaContextMessage.length / 4 + query.length / 4 + relevantContextDataMessageTokenLength + queryMessageTokenLength) + 10;
+        function createContextDataTemplate(): [(contextRecords: string[]) => string, number] {
+            const strings: string[] = ['Here are the top ',
+                ' potentially most relevant data records from the table. There may be more relevant records, but only ',
+                " could fit in your model's context window. Each record is delimited by triple quotes: ",
+            ];
+            let length: number = 0;
+            strings.forEach((string: string) => {
+                length += string.length;
+            });
+
+            return [
+                function (relevantSerializedRecordsThatCanFitInContextWindow): string {
+                    const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
+                    return strings[0]! + numRelevantRecords + strings[1] + +numRelevantRecords + strings[2] + relevantSerializedRecordsThatCanFitInContextWindow.join(' ');
+                },
+                length
+            ];
+        }
+
+        function createQueryMessageDataTemplate(): [(query: string, numRelevantRecords: number) => string, number] {
+            const strings: string[] = ['Here is my query delimited by triple double quotes: """',
+                '""" If my query is a question, answer based on the provided context data and mention that your answer is only based on the top ',
+                ' most relevant records. Structure your response with newlines for readability.' +
+                ' Be modest about what you know. If you are using general knowledge to answer the question,' +
+                ' be sure to mention that you are using general knowledge.'
+            ];
+            let length: number = 0;
+            strings.forEach((string: string) => {
+                length += string.length;
+            });
+
+            return [
+                function (query: string, numRelevantRecords: number): string {
+                    return strings[0]! + query + strings[1] + +numRelevantRecords + strings[2];
+                },
+                length
+            ];
+        }
+
+        let [createContextDataMessage, contextDataMessageLength]: [(contextRecords: string[]) => string, number] = createContextDataTemplate();
+        let [createQueryMessage, queryMessageLength]: [(query: string, numRelevantRecords: number) => string, number] = createQueryMessageDataTemplate();
+
+        const systemMessageLength = systemMessage.length;
+        const schemaContextMessageLength = schemaContextMessage.length;
+        const userQueryLength = query.length;
+        const contextDataMessageWithoutContextRecordsLength = contextDataMessageLength;
+        const queryMessageWithoutQueryLength = queryMessageLength;
+
+        const numTokensInPromptsWithoutContextRecords = Math.floor((systemMessageLength + schemaContextMessageLength + userQueryLength + contextDataMessageWithoutContextRecordsLength + queryMessageWithoutQueryLength) / 4);
         const tokensAllocatedForAIResponse = 500;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 
@@ -145,10 +187,7 @@ export class OpenAIService implements AIService {
         }
 
         const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
-
-        const relevantContextDataMessage = cleanTemplateLiteral(`Here are the top ${numRelevantRecords} potentially most relevant data records from the table.
-         There may be more relevant records, but only ${numRelevantRecords} could fit in your model's context window.
-         Each record is delimited by triple quotes: ${relevantSerializedRecordsThatCanFitInContextWindow.join(' ')}`);
+        const relevantContextDataMessage = createContextDataMessage(relevantSerializedRecordsThatCanFitInContextWindow);
 
         const messages: ChatCompletionRequestMessage[] = [
             {
@@ -161,12 +200,7 @@ export class OpenAIService implements AIService {
             },
             {
                 role: "user",
-                content: cleanTemplateLiteral(`Here is my query delimited by triple double quotes: """${query}""".
-                  If my query is a question, answer based on the provided context data and mention that your answer
-                  is only based on the top ${numRelevantRecords} most relevant records. 
-                  Structure your response with newlines for readability. Be modest about what you know.
-                  If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.
-                  `)
+                content: createQueryMessage(query, numRelevantRecords)
             }
         ];
 
@@ -187,7 +221,7 @@ export class OpenAIService implements AIService {
 
     getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToIndex.map((recordToEmbed) => {
-            const numTokens = recordToEmbed.serializedDataToEmbed.length / 4;
+            const numTokens = Math.floor(recordToEmbed.serializedDataToEmbed.length / 4);
             return {
                 ...recordToEmbed,
                 numTokensInRequest: numTokens
