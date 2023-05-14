@@ -126,15 +126,13 @@ ol, ul {
     TODO: PATH TO PROD:
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later? - Test this with fast internet connection
             - This may not even be necessary with the skip index building feature
-
         - Cleanup embeddings and tokens calculation code - test changes
         - Check for integrity of data during dot product search - test changes
+        - If even 1 record is too big to fit in context window for final response - truncate the record - test this
 
         - Make sure Ic.createContext error isn't happening in production
         - Fix bug of pasting in a query after another answer has been generated crashing app?
-        - Enforce max length on text area for user query?
         - Add streamlined feedback submission process for users
-        - If even 1 record is too big to fit in context window for final response - truncate the record - mention in the prompt that this happened?
 
         ---- Documentation ----
         - Add guide dialog for tips on how to use ask airy:

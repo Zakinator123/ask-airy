@@ -155,6 +155,7 @@ export const AskAiry = ({
                 <Box marginBottom={2}>
                     <FormField label='Query'>
                 <textarea
+                    maxLength={1500}
                     rows={2}
                     style={{
                         padding: '0.5rem',

@@ -180,6 +180,14 @@ export class OpenAIService implements AIService {
         let totalNumTokens = 0;
         for (const record of relevantContextData) {
             const numTokens = record.length / 4;
+
+            if (relevantSerializedRecordsThatCanFitInContextWindow.length === 0 && numTokens > numTokensAllowedForContext) {
+                // If even the first record is too long, truncate it and only use that record as the context data.
+                const truncatedRecord = record.substring(0, numTokensAllowedForContext * 3.8);
+                relevantSerializedRecordsThatCanFitInContextWindow.push(truncatedRecord);
+                break;
+            }
+
             if (totalNumTokens + numTokens <= numTokensAllowedForContext) {
                 relevantSerializedRecordsThatCanFitInContextWindow.push(record);
                 totalNumTokens += numTokens;
