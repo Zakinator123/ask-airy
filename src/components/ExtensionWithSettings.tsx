@@ -126,11 +126,12 @@ ol, ul {
     TODO: PATH TO PROD:
         - Test edge cases of 0 records in table, 0 tables
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later?
+            - This may not even be necessary with the skip index building feature
         - Cleanup embeddings and tokens calculation code
-        - Set temp to 0? and take a look at top p?
         - Check for integrity of data during dot product search
         - Make sure Ic.createContext error isn't happening in production
-        - Fix bug of pasting in a query after another answer has been generated crashing app?'
+        - Fix bug of pasting in a query after another answer has been generated crashing app?
+        - Enforce max length on text area for user query?
         - If even 1 record is too big to fit in context window for final response - truncate the record - mention in the prompt that this happened?
 
         ---- Documentation ----

@@ -162,8 +162,8 @@ export class OpenAIService implements AIService {
             {
                 role: "user",
                 content: cleanTemplateLiteral(`Here is my query delimited by triple double quotes: """${query}""".
-                  If my query is a question, answer based on the provided context data and mention that your answer is only based on the top ${numRelevantRecords} 
-                  most relevant records. If you use context data to answer the question, backup your statements by citing the relevant records in a readable way.
+                  If my query is a question, answer based on the provided context data and mention that your answer
+                  is only based on the top ${numRelevantRecords} most relevant records. 
                   Structure your response with newlines for readability. Be modest about what you know.
                   If you are using general knowledge to answer the question, be sure to mention that you are using general knowledge.
                   `)
@@ -171,8 +171,10 @@ export class OpenAIService implements AIService {
         ];
 
         /*
-         If my query is a search query and the context data seems relevant, respond with the following message delimited by single quotes: 'Below are some search results that may be relevant to your query:'
-         If none of the context data is relevant to the search query, respond with the following message delimited by triple single quotes: '''I'm sorry, I could not find any relevant search results for your query.'''
+          Old Prompt Snippets
+            - If you use context data to answer the question, backup your statements by citing the relevant records in a readable way.
+            - If my query is a search query and the context data seems relevant, respond with the following message delimited by single quotes: 'Below are some search results that may be relevant to your query:'
+            - If none of the context data is relevant to the search query, respond with the following message delimited by triple single quotes: '''I'm sorry, I could not find any relevant search results for your query.'''
          */
 
         const response = await this.getStreamingChatCompletionResponse(messages, aiModelConfiguration, tokensAllocatedForAIResponse);
@@ -296,7 +298,7 @@ export class OpenAIService implements AIService {
                     messages: messages,
                     model: aiModelConfiguration.model,
                     max_tokens: maxTokens,
-                    temperature: 0.1,
+                    temperature: 0.4,
                     top_p: 1,
                     n: 1
                 },
