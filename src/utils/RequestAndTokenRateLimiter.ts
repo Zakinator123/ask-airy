@@ -46,9 +46,6 @@ export class RequestAndTokenRateLimiter {
             this.tokensBucket += request.numTokensInRequest;
             this.requestsBucket += 1;
 
-            console.log(this.requestsBucket);
-            console.log(this.tokensBucket);
-
             concurrentRequestsInFlight.push(this.fnQueue.shift()!.request());
         }
     }

@@ -124,7 +124,6 @@ ol, ul {
 
 /*
     TODO: PATH TO PROD:
-        - Add feature to enable users to eject out of data indexing and search anyways
         - Test edge cases of 0 records in table, 0 tables
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later?
         - Cleanup embeddings and tokens calculation code

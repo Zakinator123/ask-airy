@@ -1,5 +1,5 @@
-import React, {useEffect} from "react";
-import {Button, useRecords} from "@airtable/blocks/ui";
+import React, {useEffect, useRef} from "react";
+import {Box, Button, Loader, Text, Tooltip, useRecords} from "@airtable/blocks/ui";
 import {AskAiryServiceInterface, AskAiryTable} from "../types/CoreTypes";
 import {Record, Table, View} from "@airtable/blocks/models";
 import {AiryTableConfigWithDefinedDataIndexField} from "../types/ConfigurationTypes";
@@ -8,8 +8,11 @@ import {toast} from "react-toastify";
 
 
 export const AskAiryAboutTableButton = ({
+                                            dataIndexingPending,
+                                            setDataIndexingPending,
                                             isLicensedUser,
                                             askAiryIsPending,
+                                            statusMessage,
                                             setStatusMessage,
                                             setNumRelevantRecordsUsedInAiAnswer,
                                             setAskAiryIsPending,
@@ -20,8 +23,11 @@ export const AskAiryAboutTableButton = ({
                                             selectedView,
                                             query
                                         }: {
+    dataIndexingPending: boolean,
+    setDataIndexingPending: (pending: boolean) => void,
     isLicensedUser: boolean,
     askAiryIsPending: boolean,
+    statusMessage: string,
     setStatusMessage: (message: string) => void,
     setNumRelevantRecordsUsedInAiAnswer: (numRecords: number) => void,
     setAskAiryIsPending: (pending: boolean) => void,
@@ -37,6 +43,8 @@ export const AskAiryAboutTableButton = ({
     tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
     const records = useRecords(tableOrViewForAskAiry, {fields: [airyTableConfig.dataIndexField.id, ...airyTableConfig.airyFields]});
 
+    const dataIndexingIsPendingRef = useRef(dataIndexingPending);
+
     const airyTable: AskAiryTable = {
         table: airyTableConfig.table,
         recordsToAskAiryAbout: records,
@@ -44,7 +52,7 @@ export const AskAiryAboutTableButton = ({
         airyDataIndexField: airyTableConfig.dataIndexField,
     }
 
-    const executeAskAiry = async () => {
+    const executeDataIndexing: () => Promise<{ executeSearchAfterIndexing: boolean }> = async () => {
         setAskAiryIsPending(true);
         setAiryResponse(undefined);
         setSearchResults(undefined);
@@ -52,49 +60,62 @@ export const AskAiryAboutTableButton = ({
 
         setStatusMessage("Checking if Airy's data index is up to date...")
         const staleOrUnIndexedRecords = await askAiryService.getRecordsWithStaleAiryIndexData(airyTable);
+
         if (staleOrUnIndexedRecords.length > 0) {
+            setDataIndexingPending(true);
+            dataIndexingIsPendingRef.current = true;
             let updateResult;
             if (staleOrUnIndexedRecords.length === records.length) {
-                const progressMessageUpdaterForFirstTimeIndexBuild = (numSuccessfulUpdates: number) => {
-                    setStatusMessage(`Building Airy Data Index for the ${airyTable.table.name} table. This may take a while. ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully indexed...`);
+                const progressMessageUpdaterForFirstTimeIndexBuild = (numSuccessfulUpdates: number, numFailedUpdates: number) => {
+                    if (!dataIndexingIsPendingRef.current) return;
+                    setStatusMessage(`Building Airy Data Index for the ${airyTable.table.name} table. This may take a while..
+                     ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully indexed.
+                     ${numFailedUpdates !== 0 ? ` Up to ${numFailedUpdates} records were not indexed successfully.`: ''}`);
                 }
+                progressMessageUpdaterForFirstTimeIndexBuild(0, 0);
 
-                progressMessageUpdaterForFirstTimeIndexBuild(0);
+                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForFirstTimeIndexBuild, dataIndexingIsPendingRef);
+                if (!dataIndexingIsPendingRef.current) return {executeSearchAfterIndexing: false};
 
-                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForFirstTimeIndexBuild);
                 if (updateResult.airtableWriteSuccesses === 0) {
-                    setStatusMessage("❌ Failed to build Airy Data Index - please check your API key or API key tier settings and try again. If the issue persists, please contact support.");
+                    setStatusMessage("❌ Failed to build Airy Data Index - please check your API key and try again. If the issue persists, please contact support.");
+                    setDataIndexingPending(false);
+                    dataIndexingIsPendingRef.current = false;
                     setAskAiryIsPending(false);
-                    return;
+                    return {executeSearchAfterIndexing: false};
                 } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
                     toast.error(`Errors occurred while building the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not indexed successfully.
-                      Un-indexed records will not be used by Ask Airy. Please check your API key or API key tier settings and try again.
+                      Un-indexed records will not be used by Ask Airy. Please check your API key and try again.
                       If the issue persists, please contact support.`, {
                         autoClose: 10000,
                         containerId: 'ask-airy-error'
                     });
                 }
             } else {
-                const progressMessageUpdaterForIndexUpdate = (numSuccessfulUpdates: number) => {
-                    setStatusMessage(`Updating ${staleOrUnIndexedRecords.length} records in the Airy Data Index for the ${airyTable.table.name} table. ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully updated...`);
+                const progressMessageUpdaterForIndexUpdate = (numSuccessfulUpdates: number, numFailedUpdates: number) => {
+                    if (!dataIndexingIsPendingRef.current) return;
+                    setStatusMessage(`Updating ${staleOrUnIndexedRecords.length} records in the Airy Data Index for the ${airyTable.table.name} table.
+                     ${numSuccessfulUpdates}/${staleOrUnIndexedRecords.length} records have been been successfully updated.
+                     ${numFailedUpdates !== 0 ? ` Up to ${numFailedUpdates} records were not indexed successfully.` : ''}`);
                 }
 
-                progressMessageUpdaterForIndexUpdate(0);
+                progressMessageUpdaterForIndexUpdate(0, 0);
+                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForIndexUpdate, dataIndexingIsPendingRef);
 
-                updateResult = await askAiryService.updateAiryDataIndexForTable(airyTable, staleOrUnIndexedRecords, progressMessageUpdaterForIndexUpdate);
+                if (!dataIndexingIsPendingRef.current) return {executeSearchAfterIndexing: false};
 
                 const numFailures = updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures;
 
                 if (updateResult.airtableWriteSuccesses === 0) {
                     toast.error('The Airy Data Index could not be updated.' +
-                        ' Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.' +
+                        ' Ask Airy results may not be accurate as a result - please check your API key and try again.' +
                         ' If the issue persists, please contact support.', {
                         containerId: 'ask-airy-error',
                         autoClose: 10000
                     });
                 } else if (numFailures > 0) {
                     toast.error(`Errors occurred while updating the Airy Data Index. Up to ${numFailures} records were not updated successfully.
-                     Ask Airy results may not be accurate as a result - please check your API key or API key tier settings and try again.
+                     Ask Airy results may not be accurate as a result - please check your API key and try again.
                      If the issue persists, please contact support.`, {
                         autoClose: 10000,
                         containerId: 'ask-airy-error'
@@ -102,8 +123,12 @@ export const AskAiryAboutTableButton = ({
                 }
             }
         }
+        setDataIndexingPending(false);
+        dataIndexingIsPendingRef.current = false;
+        return {executeSearchAfterIndexing: true};
+    }
 
-        // Split out this part of the code so that when users eject out of indexing this won't be duplicated.
+    async function executeSearchAndAskAiry() {
         setStatusMessage("Finding records relevant to your query...");
         // TODO: Make num results configurable
         // TODO: Test semantic search with empty table.
@@ -136,9 +161,16 @@ export const AskAiryAboutTableButton = ({
                 containerId: 'ask-airy-error'
             });
         } else if (!airyTableConfig.table.hasPermissionToUpdateRecord(undefined, {[airyTableConfig.dataIndexField.id]: undefined})) {
-            toast.error('You must have edit permissions on the Airy Data Index field to use Ask Airy.', {autoClose: 10000, containerId: 'ask-airy-error'});
+            toast.error('You must have edit permissions on the Airy Data Index field to use Ask Airy.', {
+                autoClose: 10000,
+                containerId: 'ask-airy-error'
+            });
         } else {
-            executeAskAiry();
+            const {executeSearchAfterIndexing} = await executeDataIndexing();
+            if (executeSearchAfterIndexing) {
+                await executeSearchAndAskAiry()
+            }
+            // Data Indexing ended prematurely - search was called from skip indexing button. OR Index build failed.
         }
     };
 
@@ -148,6 +180,32 @@ export const AskAiryAboutTableButton = ({
                 onClick={clickAskAiryButton}>
             Ask Airy
         </Button>
+
+        {
+            statusMessage.length !== 0 && <Box display='flex' justifyContent='center'>
+                <Text margin={3} fontSize={16}>{askAiryIsPending &&
+                    <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
+            </Box>
+        }
+
+        {dataIndexingPending &&
+            <Box margin={3} display='flex' justifyContent='center'>
+                <Tooltip
+                    content="Ask Airy results may not be accurate if indexing is incomplete."
+                    placementX={Tooltip.placements.CENTER}
+                    placementY={Tooltip.placements.BOTTOM}
+                    shouldHideTooltipOnClick={true}
+                >
+                    <Button variant='danger' onClick={() => {
+                        dataIndexingIsPendingRef.current = false;
+                        setDataIndexingPending(false);
+                        executeSearchAndAskAiry();
+                    }}>
+                        Skip Remaining Data Indexing
+                    </Button>
+                </Tooltip>
+            </Box>
+        }
         <Toast containerId='ask-airy-error'/>
     </>
 }

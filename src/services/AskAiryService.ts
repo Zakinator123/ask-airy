@@ -22,11 +22,13 @@ export class AskAiryService implements AskAiryServiceInterface {
         this.AirtableMutationService = AirtableMutationService;
     }
 
-    updateAiryDataIndexForTable = async (airyTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>, dataIndexUpdateProgressUpdater: (numSuccesses: number) => void): Promise<AiryDataIndexUpdateResult> => {
+    updateAiryDataIndexForTable = async (airyTable: AskAiryTable,
+                                         recordsToIndex: Array<RecordToIndex>,
+                                         dataIndexUpdateProgressUpdater: (numSuccesses: number, numFailures: number) => void,
+                                         dataIndexingPending: { current: boolean }): Promise<AiryDataIndexUpdateResult> => {
         let numEmbeddingFailures = 0;
         let numAirtableUpdateFailures = 0;
         let airtableWriteSuccesses = 0;
-
 
         const embeddingsRequests = this.aiService.getEmbeddingsRequestsForRecords(recordsToIndex);
 
@@ -34,8 +36,8 @@ export class AskAiryService implements AskAiryServiceInterface {
         for (const embeddingsRequest of embeddingsRequests) {
             const embeddings = await this.aiService.getEmbeddings(embeddingsRequest);
             if (embeddings === undefined) {
-                console.log("1");
                 numEmbeddingFailures += embeddingsRequest.recordsToEmbed.length;
+                dataIndexUpdateProgressUpdater(airtableWriteSuccesses, numEmbeddingFailures + numAirtableUpdateFailures);
                 continue;
             }
 
@@ -53,15 +55,22 @@ export class AskAiryService implements AskAiryServiceInterface {
                 })))
                 .then(() => {
                     airtableWriteSuccesses += embeddingsRequest.recordsToEmbed.length;
-                    dataIndexUpdateProgressUpdater(airtableWriteSuccesses);
+                    dataIndexUpdateProgressUpdater(airtableWriteSuccesses, numEmbeddingFailures + numAirtableUpdateFailures);
                 })
                 .catch((e) => {
                     console.error(e);
                     numAirtableUpdateFailures += embeddingsRequest.recordsToEmbed.length;
+                    dataIndexUpdateProgressUpdater(airtableWriteSuccesses, numEmbeddingFailures + numAirtableUpdateFailures);
                 });
+
+            if (!dataIndexingPending.current) {
+                console.error('Data indexing canceled!!')
+                // Data indexing canceled
+                break;
+            }
         }
 
-        if (currentAirtableWritePromise !== undefined) await currentAirtableWritePromise;
+        if (currentAirtableWritePromise !== undefined && dataIndexingPending) await currentAirtableWritePromise;
         return {
             numEmbeddingFailures,
             numAirtableUpdateFailures,

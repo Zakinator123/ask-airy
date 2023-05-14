@@ -28,7 +28,11 @@ export interface AIService {
 }
 
 export interface AskAiryServiceInterface {
-    updateAiryDataIndexForTable: (askAiryTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>, dataIndexUpdateProgressUpdater: (numSuccesses: number) => void) => Promise<AiryDataIndexUpdateResult>,
+    updateAiryDataIndexForTable: (askAiryTable: AskAiryTable, recordsToIndex: Array<RecordToIndex>,
+                                  dataIndexUpdateProgressUpdater: (numSuccesses: number, numFailures: number) => void,
+                                  dataIndexingPending: {
+                                      current: boolean
+                                  }) => Promise<AiryDataIndexUpdateResult>,
     getRecordsWithStaleAiryIndexData: (askAiryTable: AskAiryTable) => Promise<Array<RecordToIndex>>,
     executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number) => Promise<Record[]>,
     askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AiryTableQueryResponse>,

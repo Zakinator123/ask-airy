@@ -45,6 +45,7 @@ export const AskAiry = ({
     const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
     const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
+    const [dataIndexingPending, setDataIndexingPending] = useState<boolean>(false);
 
     let selectedTable: Table | undefined = undefined;
     let selectedTableConfig: AiryTableConfigWithDefinedDataIndexField | undefined = undefined;
@@ -54,6 +55,7 @@ export const AskAiry = ({
     if (askAiryTopic === 'anything') {
         askAiryButton = <AskAiryAboutAnythingButton isLicensedUser={isLicensedUser}
                                                     askAiryIsPending={askAiryIsPending}
+                                                    statusMessage={statusMessage}
                                                     setStatusMessage={setStatusMessage}
                                                     setAskAiryIsPending={setAskAiryIsPending}
                                                     askAiryService={askAiryService}
@@ -66,7 +68,6 @@ export const AskAiry = ({
             selectedTableConfig = airyTableConfigs.find(airyTableConfig => airyTableConfig.table.id === selectedTable!.id)
 
 
-
             if (selectedTableConfig !== undefined) {
                 askAiryButton =
                     <Suspense fallback={<Button disabled={true} variant='primary'><Loader position='relative' top='1px'
@@ -74,8 +75,11 @@ export const AskAiry = ({
                                                                                           scale={0.2}/>&nbsp; Loading
                         Records from the {selectedTableConfig.table.name} table...</Button>}>
                         <AskAiryAboutTableButton
+                            dataIndexingPending={dataIndexingPending}
+                            setDataIndexingPending={setDataIndexingPending}
                             isLicensedUser={isLicensedUser}
                             setNumRelevantRecordsUsedInAiAnswer={setNumRelevantRecordsUsedInAiryResponse}
+                            statusMessage={statusMessage}
                             setStatusMessage={setStatusMessage}
                             setAiryResponse={setAiryResponse}
                             askAiryIsPending={askAiryIsPending}
@@ -120,7 +124,6 @@ export const AskAiry = ({
                                 setSearchResults(undefined);
                                 setSelectedView(undefined);
                                 setStatusMessage('');
-                                setQuery('');
                                 setAskAiryTopic(askAiryTopic ? askAiryTopic as 'anything' | TableId : undefined);
                             }}
                         />
@@ -139,11 +142,10 @@ export const AskAiry = ({
                             table={selectedTable}
                             view={selectedView}
                             onChange={newView => {
-                                setAiryResponse(undefined);
                                 setNumRelevantRecordsUsedInAiryResponse(0);
                                 setSearchResults(undefined);
                                 setStatusMessage('');
-                                setQuery('');
+                                setAiryResponse(undefined);
                                 setSelectedView(newView ?? undefined);
                             }}
                         />
@@ -174,10 +176,6 @@ export const AskAiry = ({
                 </Box>
 
                 {askAiryButton}
-
-                {statusMessage.length !== 0 && <Box display='flex' justifyContent='center'>
-                    <Text fontSize={16}>{askAiryIsPending && <Loader scale={0.25}/>}&nbsp; &nbsp;{statusMessage}</Text>
-                </Box>}
 
                 {airyResponse && <AiryResponse airyResponse={airyResponse}
                                                setAskAiryIsPending={setAskAiryIsPending}
