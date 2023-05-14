@@ -4,11 +4,12 @@ import Heap from "heap-js";
 import {
     AiryDataIndexUpdateResult,
     AiryIndexData,
-    AIService,
+    AiryResponse,
     AiryTableQueryResponse,
+    AIService,
     AskAiryServiceInterface,
     AskAiryTable,
-    RecordToIndex, AiryResponse
+    RecordToIndex
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecordForEmbeddings} from "../utils/RandomUtils";
@@ -25,7 +26,9 @@ export class AskAiryService implements AskAiryServiceInterface {
     updateAiryDataIndexForTable = async (airyTable: AskAiryTable,
                                          recordsToIndex: Array<RecordToIndex>,
                                          dataIndexUpdateProgressUpdater: (numSuccesses: number, numFailures: number) => void,
-                                         dataIndexingPending: { current: boolean }): Promise<AiryDataIndexUpdateResult> => {
+                                         dataIndexingPending: {
+                                             current: boolean
+                                         }): Promise<AiryDataIndexUpdateResult> => {
         let numEmbeddingFailures = 0;
         let numAirtableUpdateFailures = 0;
         let airtableWriteSuccesses = 0;
@@ -99,9 +102,11 @@ export class AskAiryService implements AskAiryServiceInterface {
             if (currentRecordAiryIndexData === '') {
                 recordsToUpdate.push({recordId: record.id, newHash, serializedDataToEmbed});
             } else {
-                // TODO: Handle error here if parsing fails
-                const airyIndexDataForRecords: AiryIndexData = JSON.parse(currentRecordAiryIndexData);
-                if (newHash !== airyIndexDataForRecords.hash) {
+                const airyIndexDataForRecords = JSON.parse(currentRecordAiryIndexData);
+                if (!this.isAiryIndexData(airyIndexDataForRecords, undefined)) {
+                    // The data is corrupted, so we'll just overwrite it
+                    recordsToUpdate.push({recordId: record.id, newHash, serializedDataToEmbed});
+                } else if (newHash !== airyIndexDataForRecords.hash) {
                     recordsToUpdate.push({recordId: record.id, newHash, serializedDataToEmbed});
                 }
             }
@@ -112,16 +117,40 @@ export class AskAiryService implements AskAiryServiceInterface {
         return recordsToUpdate;
     }
 
-    computeDotProduct = (a: number[], b: number[]) =>
+
+    private isAiryIndexData(data: any, expectedEmbeddingSize: number | undefined): data is AiryIndexData {
+        if (typeof data !== 'object') return false;
+
+        // Validate the 'hash' property
+        if (!data.hasOwnProperty('hash') || typeof data.hash !== 'string') {
+            return false;
+        }
+
+        // Validate the 'embedding' property
+        if (!data.hasOwnProperty('embedding') || !Array.isArray(data.embedding)) {
+            return false;
+        }
+
+        if (expectedEmbeddingSize !== undefined && data.embedding.length !== expectedEmbeddingSize) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private computeDotProduct = (a: number[], b: number[]) =>
         a.map((x, i) => a[i]! * b[i]!).reduce((m, n) => m + n);
 
     executeSemanticSearchForTable = async ({
                                                airyDataIndexField,
                                                airyFields,
                                                recordsToAskAiryAbout,
-                                               table
+                                               table,
                                            }: AskAiryTable,
-                                           query: string, numResults: number): Promise<Record[]> => {
+                                           query: string,
+                                           numResults: number,
+                                           showCorruptedDataIndexToastMessage: (numCorruptedRecords: number) => void)
+        : Promise<Record[]> => {
 
         const hypotheticalSemanticSearchResult = await this.aiService.getHypotheticalSearchResultGivenUserQuery({
             airyDataIndexField: airyDataIndexField,
@@ -137,12 +166,17 @@ export class AskAiryService implements AskAiryServiceInterface {
         const dotProductPerformance = window.performance;
         const startTime = dotProductPerformance.now();
         const heap = new Heap<[number, Record]>((a, b) => a[0] - b[0]);
+        let recordsWithCorruptedDataIndexField = [];
         for (const record of recordsToAskAiryAbout) {
             const airyIndexDataString = record.getCellValueAsString(airyDataIndexField.id);
             if (airyIndexDataString === '') continue;
-            const airyIndexData = JSON.parse(record.getCellValue(airyDataIndexField.id) as string) as AiryIndexData;
 
-            // TODO: Check for integrity of airyIndexData here and delete if corrupted
+            const airyIndexData = JSON.parse(airyIndexDataString);
+
+            if (!this.isAiryIndexData(airyIndexData, embeddedQuery.length)) {
+                recordsWithCorruptedDataIndexField.push(record);
+                continue;
+            }
 
             const dotProduct = this.computeDotProduct(embeddedQuery, airyIndexData.embedding);
 
@@ -152,6 +186,15 @@ export class AskAiryService implements AskAiryServiceInterface {
                 heap.pop();
                 heap.push([dotProduct, record]);
             }
+        }
+
+        if (recordsWithCorruptedDataIndexField.length > 0) {
+            showCorruptedDataIndexToastMessage(recordsWithCorruptedDataIndexField.length);
+            this.AirtableMutationService.updateRecordsInTableAsync(table, recordsWithCorruptedDataIndexField.map(record => (
+                {
+                    id: record.id,
+                    fields: {[airyDataIndexField.id]: ''}
+                })))
         }
 
         const topKSearchResults = Array.from(heap.toArray())

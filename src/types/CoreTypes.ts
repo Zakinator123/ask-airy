@@ -34,7 +34,7 @@ export interface AskAiryServiceInterface {
                                       current: boolean
                                   }) => Promise<AiryDataIndexUpdateResult>,
     getRecordsWithStaleAiryIndexData: (askAiryTable: AskAiryTable) => Promise<Array<RecordToIndex>>,
-    executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number) => Promise<Record[]>,
+    executeSemanticSearchForTable: (askAiryTable: AskAiryTable, query: string, numResults: number, showCorruptedDataIndexToastMessage: (numCorruptedRecords: number) => void) => Promise<Record[]>,
     askAiryAboutRelevantRecords: (askAiryTable: AskAiryTable, query: string, relevantRecords: Record[]) => Promise<AiryTableQueryResponse>,
     askAiryAboutAnything: (query: string) => Promise<AiryResponse>,
 }

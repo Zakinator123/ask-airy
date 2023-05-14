@@ -134,7 +134,10 @@ export const AskAiryAboutTableButton = ({
         // TODO: Test semantic search with empty table.
         let relevantRecords: Record[] = [];
         try {
-            relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5);
+            relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5, (numCorruptedRecords: number) => {
+                toast.error(`There were ${numCorruptedRecords} records with corrupted data in the ${airyTable.airyDataIndexField.name} field.
+                 These records will not be used by Ask Airy and the corrupted data in their data index field will be removed.`);
+            });
         } catch (e) {
             setStatusMessage("❌ An error occurred finding relevant records for Airy.");
             setAskAiryIsPending(false);
