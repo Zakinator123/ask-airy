@@ -82,7 +82,7 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
                         </Box>
                     </FormField>
                     <Text marginTop={3} marginLeft={2} size='small' textColor='gray'>
-                        * Enabling unnecessary fields will decrease Airy's performance and response quality.
+                        * Enabling unnecessary fields (e.g. fields with URLs) will decrease Airy's performance and response quality.
                         If the data in the enabled fields of a record add up to be more than ~6000 words of text,
                         it will be truncated in Airy's data index to be less than ~6000 words.</Text>
                 </>}

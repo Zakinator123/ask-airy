@@ -126,7 +126,6 @@ ol, ul {
     TODO: PATH TO PROD:
         - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later? - Test this with fast internet connection
             - This may not even be necessary with the skip index building feature
-        - Cleanup embeddings and tokens calculation code - test changes
         - Check for integrity of data during dot product search - test changes
         - If even 1 record is too big to fit in context window for final response - truncate the record - test this
 
@@ -136,15 +135,10 @@ ol, ul {
         1. Create a short video showing how to use the extension
         2. Create 3 short gifs showing the extension in action
 
+        - Emphasize in the about page that you cannot ask Airy to modify any data for you. Maybe this should be in the prompt? Test this.
         - Create jekyll site for docs
         - Update gumroad license page
         - Finish marketplace submission docs
-        - Add guide dialog for tips on how to use ask airy:
-            - include message saying that large tables may take a while to load and index with slow internet connections.
-            - guide should mention that using views will also decrease index building time.
-            - guide should mention that Airy is not a chatbot and will not remember prev questions.
-            - Add a description to your table to give Airy more context
-            - Its particularly suited for NLP tasks and semantic search, but not numerical data analysis over the entire airtable
         - Update about tab
         - Turn on linting and fix all linting errors
         - Cleanup console logging messages

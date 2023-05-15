@@ -39,14 +39,14 @@ export const About = () => {
         <Text as='h3' fontWeight={600} size='xlarge'>How this extension works:</Text>
         <Box padding='0.7rem'>
             <Text>
-                When you configure a table to use with Ask Airy, a 'Data Index' field will be created in that table.
-                When you ask your first query, the Data Index field will be populated with AI-generated data
-                (embeddings).
-
-                This data is used for all subsequent queries to find the most relevant records for your query.
-                Any changes to a record will cause the Data Index field for that record to be updated the next time you
-                make a query. Once the most relevant records are found, Airy will try to analyze as many of those records as it
-                can to formulate an answer to your query.
+                When you use a table with Ask Airy, a 'Data Index' field will be created.
+                When you ask your first query, Ask Airy will populate this field with AI-generated data
+                (embeddings) that will be used to find the most relevant records for your queries.
+                <br/>
+                Record updates will cause the Data Index field for that record to be updated the next time you use Ask Airy.
+                <br/>
+                Once the Data Index is built and the most relevant records are found for your query,
+                Airy will try to analyze as many of those records as it can to formulate an answer to your query.
             </Text>
         </Box>
         <br/>

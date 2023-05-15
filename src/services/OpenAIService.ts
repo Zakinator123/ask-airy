@@ -14,6 +14,7 @@ import {OpenAIEmbeddingModel} from "../types/ConfigurationTypes";
 import {RequestAndTokenRateLimiter} from "../utils/RequestAndTokenRateLimiter";
 import {cleanTemplateLiteral} from "../utils/RandomUtils";
 import {OpenAI} from "openai-streams";
+import GPT3Tokenizer from 'gpt3-tokenizer';
 
 
 const getTextualDescriptionOfTableSchema = ({
@@ -24,9 +25,6 @@ const getTextualDescriptionOfTableSchema = ({
                                             The table's name is ${table.name}${table.description && ` The description of the table is ${table.description}.`}.
                                             The table has the following columns: ${table.primaryField.name}, 
                                             ${airyFields.filter(field => !field.isPrimaryField).map(field => field.name).join(', ')}.`)
-
-const calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
-    messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 3), 0)
 
 type AIModelConfiguration = {
     model: string,
@@ -41,6 +39,7 @@ export class OpenAIService implements AIService {
     private readonly _maxTokens: number;
     private readonly requestAndTokenRateLimiter: RequestAndTokenRateLimiter;
     private readonly apiKey;
+    private readonly tokenizer;
 
     constructor(apiKey: string,
                 embeddingModel: OpenAIEmbeddingModel,
@@ -55,12 +54,17 @@ export class OpenAIService implements AIService {
         this.embeddingModel = embeddingModel;
         this.chatModelConfiguration = {
             model: "gpt-3.5-turbo",
-            maxContextWindowTokens: 3800
+            maxContextWindowTokens: 3900
         }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
         this.requestAndTokenRateLimiter = new RequestAndTokenRateLimiter(_maxRequests, 60000, _maxTokens);
+
+        this.tokenizer = new GPT3Tokenizer({type: 'gpt3'}); // or 'codex'
     }
+
+    private calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
+        messages.reduce((totalTokens, message) => totalTokens + this.tokenizer.encode(message.content).bpe.length, 0)
 
     getHypotheticalSearchResultGivenUserQuery = async ({
                                                            airyFields,
@@ -89,7 +93,7 @@ export class OpenAIService implements AIService {
             const response2 = await this.openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
                 messages: messages,
-                max_tokens: 400 - calculateTokensInChatCompletionMessages(messages),
+                max_tokens: 400 - this.calculateTokensInChatCompletionMessages(messages),
                 temperature: 0.4,
                 top_p: 1,
                 n: 1,
@@ -124,66 +128,57 @@ export class OpenAIService implements AIService {
 
         const schemaContextMessage = cleanTemplateLiteral(`${getTextualDescriptionOfTableSchema(airyTableSchema)}`);
 
-        function createContextDataTemplate(): [(contextRecords: string[]) => string, number] {
+        function createContextDataTemplate(): [(contextRecords: string[]) => string, string] {
             const strings: string[] = ['Here are the top ',
                 ' potentially most relevant data records from the table. There may be more relevant records, but only ',
                 " could fit in your model's context window. Each record is delimited by triple quotes: ",
             ];
-            let length: number = 0;
-            strings.forEach((string: string) => {
-                length += string.length;
-            });
 
             return [
                 function (relevantSerializedRecordsThatCanFitInContextWindow): string {
                     const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
                     return strings[0]! + numRelevantRecords + strings[1] + numRelevantRecords + strings[2] + relevantSerializedRecordsThatCanFitInContextWindow.join(' ');
                 },
-                length
+                strings.join(' ')
             ];
         }
 
-        function createQueryMessageDataTemplate(): [(query: string, numRelevantRecords: number) => string, number] {
+        function createQueryMessageDataTemplate(): [(query: string, numRelevantRecords: number) => string, string] {
             const strings: string[] = ['Here is my query delimited by triple double quotes: """',
                 '""" If my query is a question, answer based on the provided context data and mention that your answer is only based on the top ',
                 ' most relevant records. Structure your response with newlines for readability.' +
                 ' Be modest about what you know. If you are using general knowledge to answer the question,' +
                 ' be sure to mention that you are using general knowledge.'
             ];
-            let length: number = 0;
-            strings.forEach((string: string) => {
-                length += string.length;
-            });
 
             return [
                 function (query: string, numRelevantRecords: number): string {
                     return strings[0]! + query + strings[1] + numRelevantRecords + strings[2];
                 },
-                length
+                strings.join(' ')
             ];
         }
 
-        let [createContextDataMessage, contextDataMessageLength]: [(contextRecords: string[]) => string, number] = createContextDataTemplate();
-        let [createQueryMessage, queryMessageLength]: [(query: string, numRelevantRecords: number) => string, number] = createQueryMessageDataTemplate();
+        let [createContextDataMessage, contextDataMessageTemplate]: [(contextRecords: string[]) => string, string] = createContextDataTemplate();
+        let [createQueryMessage, queryMessageTemplate]: [(query: string, numRelevantRecords: number) => string, string] = createQueryMessageDataTemplate();
 
-        const systemMessageLength = systemMessage.length;
-        const schemaContextMessageLength = schemaContextMessage.length;
-        const userQueryLength = query.length;
-        const contextDataMessageWithoutContextRecordsLength = contextDataMessageLength;
-        const queryMessageWithoutQueryLength = queryMessageLength;
+        const systemMessageLength = systemMessage;
+        const schemaContextMessageLength = schemaContextMessage;
+        const userQueryLength = query;
 
-        const numTokensInPromptsWithoutContextRecords = Math.floor((systemMessageLength + schemaContextMessageLength + userQueryLength + contextDataMessageWithoutContextRecordsLength + queryMessageWithoutQueryLength) / 3);
+        const numTokensInPromptsWithoutContextRecords = this.tokenizer.encode(systemMessageLength + schemaContextMessageLength + userQueryLength + contextDataMessageTemplate + queryMessageTemplate).bpe.length;
         const tokensAllocatedForAIResponse = 400;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 
         const relevantSerializedRecordsThatCanFitInContextWindow = [];
         let totalNumTokens = 0;
         for (const record of relevantContextData) {
-            const numTokensInRecord = record.length / 3;
+            const tokenizedRecord = this.tokenizer.encode(record).bpe;
+            const numTokensInRecord = tokenizedRecord.length;
 
             if (relevantSerializedRecordsThatCanFitInContextWindow.length === 0 && numTokensInRecord > numTokensAllowedForContext) {
                 // If even the first record is too long, truncate it and only use that record as the context data.
-                const truncatedRecord = record.substring(0, numTokensAllowedForContext * 3.8);
+                const truncatedRecord = this.tokenizer.decode(tokenizedRecord.slice(0, numTokensAllowedForContext - 100));
                 relevantSerializedRecordsThatCanFitInContextWindow.push(truncatedRecord);
                 break;
             }
@@ -219,7 +214,6 @@ export class OpenAIService implements AIService {
             - If none of the context data is relevant to the search query, respond with the following message delimited by triple single quotes: '''I'm sorry, I could not find any relevant search results for your query.'''
          */
 
-
         const response = await this.getStreamingChatCompletionResponse(messages, aiModelConfiguration, tokensAllocatedForAIResponse);
 
         return !response.errorOccurred ? {
@@ -230,7 +224,7 @@ export class OpenAIService implements AIService {
 
     getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToIndex.map((recordToEmbed) => {
-            const numTokens = Math.floor(recordToEmbed.serializedDataToEmbed.length / 3);
+            const numTokens = this.tokenizer.encode(recordToEmbed.serializedDataToEmbed).bpe.length;
             return {
                 ...recordToEmbed,
                 numTokensInRequest: numTokens
@@ -330,7 +324,7 @@ export class OpenAIService implements AIService {
             }
         ];
 
-        return this.getStreamingChatCompletionResponse(messages, this.chatModelConfiguration, this.chatModelConfiguration.maxContextWindowTokens - calculateTokensInChatCompletionMessages(messages));
+        return this.getStreamingChatCompletionResponse(messages, this.chatModelConfiguration, this.chatModelConfiguration.maxContextWindowTokens - this.calculateTokensInChatCompletionMessages(messages));
     }
 
     private getStreamingChatCompletionResponse = async (messages: ChatCompletionRequestMessage[], aiModelConfiguration: AIModelConfiguration, maxTokens: number): Promise<AiryResponse> => {

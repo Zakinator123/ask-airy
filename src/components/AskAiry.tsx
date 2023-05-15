@@ -170,7 +170,7 @@ export const AskAiry = ({
                     placeholder="Ask Airy anything..."
                 />
                         <TextButton margin={1} onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
-                            Tips for using Ask Airy
+                            Guide to using Ask Airy
                         </TextButton>
                         <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
                     </FormField>
