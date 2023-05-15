@@ -130,24 +130,27 @@ ol, ul {
         - Check for integrity of data during dot product search - test changes
         - If even 1 record is too big to fit in context window for final response - truncate the record - test this
 
-        - Make sure Ic.createContext error isn't happening in production
-        - Fix bug of pasting in a query after another answer has been generated crashing app?
-        - Add streamlined feedback submission process for users
 
         ---- Documentation ----
+        1. Create a short video showing how to use the extension
+        2. Create 3 short gifs showing the extension in action
+
+        - Create jekyll site for docs
+        - Update gumroad license page
+        - Finish marketplace submission docs
         - Add guide dialog for tips on how to use ask airy:
             - include message saying that large tables may take a while to load and index with slow internet connections.
             - guide should mention that using views will also decrease index building time.
             - guide should mention that Airy is not a chatbot and will not remember prev questions.
+            - Add a description to your table to give Airy more context
             - Its particularly suited for NLP tasks and semantic search, but not numerical data analysis over the entire airtable
         - Update about tab
-        - Create jekyll site for docs
-        - Update gumroad license page
-        - Cleanup console logging messages
         - Turn on linting and fix all linting errors
+        - Cleanup console logging messages
         - Rename premium classes in license component
 
         Future improvements:
+        - Add streamlined feedback submission process for users
         - Add voice-to-text for Ask Airy
         - Add support for gpt 4
         - Add support for using claude's giant context window

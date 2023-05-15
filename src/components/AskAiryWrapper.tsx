@@ -35,7 +35,7 @@ const getValidatedAiryTableConfigs = (extensionConfiguration: ExtensionConfigura
     if (extensionConfiguration === undefined) {
         return {
             noValidAiryTables: true,
-            errorMessage: 'You must configure the extension in the settings tab before you can use it!'
+            errorMessage: 'Configure the extension in the settings tab to use Ask Airy!'
         }
     }
 

@@ -323,13 +323,13 @@ export class OpenAIService implements AIService {
             {
                 role: "user",
                 content: cleanTemplateLiteral(`Here is my query delimited by triple quotes: """${query}""".
-                   Be modest about what you know and answer concisely, but be as helpful as possible.
+                   Be modest about what you know and answer concisely, but be as helpful as possible. Structure your response with newlines to be more readable.
                    If you are using general knowledge to answer the question, be sure to mention that you are using general
                    knowledge and that I must select a table from the dropdown menu above if I would like to ask a question about my Airtable data.`)
             }
         ];
 
-        return this.getStreamingChatCompletionResponse(messages, this.chatModelConfiguration, this.chatModelConfiguration.maxContextWindowTokens);
+        return this.getStreamingChatCompletionResponse(messages, this.chatModelConfiguration, this.chatModelConfiguration.maxContextWindowTokens - calculateTokensInChatCompletionMessages(messages));
     }
 
     private getStreamingChatCompletionResponse = async (messages: ChatCompletionRequestMessage[], aiModelConfiguration: AIModelConfiguration, maxTokens: number): Promise<AiryResponse> => {
