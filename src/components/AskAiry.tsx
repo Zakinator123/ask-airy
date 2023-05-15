@@ -73,7 +73,7 @@ export const AskAiry = ({
                     <Suspense fallback={<Button disabled={true} variant='primary'><Loader position='relative' top='1px'
                                                                                           fillColor='white'
                                                                                           scale={0.2}/>&nbsp; Loading
-                        Records from the {selectedTableConfig.table.name} table...</Button>}>
+                        Records..</Button>}>
                         <AskAiryAboutTableButton
                             dataIndexingPending={dataIndexingPending}
                             setDataIndexingPending={setDataIndexingPending}

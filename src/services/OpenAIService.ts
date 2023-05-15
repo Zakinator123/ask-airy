@@ -26,7 +26,7 @@ const getTextualDescriptionOfTableSchema = ({
                                             ${airyFields.filter(field => !field.isPrimaryField).map(field => field.name).join(', ')}.`)
 
 const calculateTokensInChatCompletionMessages = (messages: ChatCompletionRequestMessage[]): number =>
-    messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 4), 0)
+    messages.reduce((totalTokens, message) => totalTokens + Math.floor(message.content.length / 3), 0)
 
 type AIModelConfiguration = {
     model: string,
@@ -55,7 +55,7 @@ export class OpenAIService implements AIService {
         this.embeddingModel = embeddingModel;
         this.chatModelConfiguration = {
             model: "gpt-3.5-turbo",
-            maxContextWindowTokens: 3900
+            maxContextWindowTokens: 3800
         }
         this._maxRequests = _maxRequests;
         this._maxTokens = _maxTokens;
@@ -137,7 +137,7 @@ export class OpenAIService implements AIService {
             return [
                 function (relevantSerializedRecordsThatCanFitInContextWindow): string {
                     const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
-                    return strings[0]! + numRelevantRecords + strings[1] + +numRelevantRecords + strings[2] + relevantSerializedRecordsThatCanFitInContextWindow.join(' ');
+                    return strings[0]! + numRelevantRecords + strings[1] + numRelevantRecords + strings[2] + relevantSerializedRecordsThatCanFitInContextWindow.join(' ');
                 },
                 length
             ];
@@ -157,7 +157,7 @@ export class OpenAIService implements AIService {
 
             return [
                 function (query: string, numRelevantRecords: number): string {
-                    return strings[0]! + query + strings[1] + +numRelevantRecords + strings[2];
+                    return strings[0]! + query + strings[1] + numRelevantRecords + strings[2];
                 },
                 length
             ];
@@ -172,26 +172,26 @@ export class OpenAIService implements AIService {
         const contextDataMessageWithoutContextRecordsLength = contextDataMessageLength;
         const queryMessageWithoutQueryLength = queryMessageLength;
 
-        const numTokensInPromptsWithoutContextRecords = Math.floor((systemMessageLength + schemaContextMessageLength + userQueryLength + contextDataMessageWithoutContextRecordsLength + queryMessageWithoutQueryLength) / 4);
-        const tokensAllocatedForAIResponse = 500;
+        const numTokensInPromptsWithoutContextRecords = Math.floor((systemMessageLength + schemaContextMessageLength + userQueryLength + contextDataMessageWithoutContextRecordsLength + queryMessageWithoutQueryLength) / 3);
+        const tokensAllocatedForAIResponse = 400;
         const numTokensAllowedForContext = maxContextWindowTokens - numTokensInPromptsWithoutContextRecords - tokensAllocatedForAIResponse;
 
         const relevantSerializedRecordsThatCanFitInContextWindow = [];
         let totalNumTokens = 0;
         for (const record of relevantContextData) {
-            const numTokens = record.length / 4;
+            const numTokensInRecord = record.length / 3;
 
-            if (relevantSerializedRecordsThatCanFitInContextWindow.length === 0 && numTokens > numTokensAllowedForContext) {
+            if (relevantSerializedRecordsThatCanFitInContextWindow.length === 0 && numTokensInRecord > numTokensAllowedForContext) {
                 // If even the first record is too long, truncate it and only use that record as the context data.
                 const truncatedRecord = record.substring(0, numTokensAllowedForContext * 3.8);
                 relevantSerializedRecordsThatCanFitInContextWindow.push(truncatedRecord);
                 break;
             }
 
-            if (totalNumTokens + numTokens <= numTokensAllowedForContext) {
-                relevantSerializedRecordsThatCanFitInContextWindow.push(record);
-                totalNumTokens += numTokens;
-            }
+            if (totalNumTokens + numTokensInRecord >= numTokensAllowedForContext) break;
+
+            relevantSerializedRecordsThatCanFitInContextWindow.push(record);
+            totalNumTokens += numTokensInRecord;
         }
 
         const numRelevantRecords = relevantSerializedRecordsThatCanFitInContextWindow.length;
@@ -219,6 +219,7 @@ export class OpenAIService implements AIService {
             - If none of the context data is relevant to the search query, respond with the following message delimited by triple single quotes: '''I'm sorry, I could not find any relevant search results for your query.'''
          */
 
+
         const response = await this.getStreamingChatCompletionResponse(messages, aiModelConfiguration, tokensAllocatedForAIResponse);
 
         return !response.errorOccurred ? {
@@ -229,7 +230,7 @@ export class OpenAIService implements AIService {
 
     getEmbeddingsRequestsForRecords = (recordsToIndex: Array<RecordToIndex>): Array<EmbeddingsRequest> => {
         const recordsToEmbedWithTokensCounted: RecordToIndexWithTokensCounted[] = recordsToIndex.map((recordToEmbed) => {
-            const numTokens = Math.floor(recordToEmbed.serializedDataToEmbed.length / 4);
+            const numTokens = Math.floor(recordToEmbed.serializedDataToEmbed.length / 3);
             return {
                 ...recordToEmbed,
                 numTokensInRequest: numTokens

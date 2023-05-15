@@ -132,6 +132,7 @@ ol, ul {
 
 
         ---- Documentation ----
+        0. Create compelling examples
         1. Create a short video showing how to use the extension
         2. Create 3 short gifs showing the extension in action
 

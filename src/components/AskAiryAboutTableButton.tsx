@@ -83,7 +83,7 @@ export const AskAiryAboutTableButton = ({
                     dataIndexingIsPendingRef.current = false;
                     setAskAiryIsPending(false);
                     return {executeSearchAfterIndexing: false};
-                } else if (updateResult.airtableWriteSuccesses < staleOrUnIndexedRecords.length) {
+                } else if (updateResult.numAirtableUpdateFailures > 0) {
                     toast.error(`Errors occurred while building the Airy Data Index. Up to ${updateResult.numAirtableUpdateFailures + updateResult.numEmbeddingFailures} records were not indexed successfully.
                       Un-indexed records will not be used by Ask Airy. Please check your API key and try again.
                       If the issue persists, please contact support.`, {
