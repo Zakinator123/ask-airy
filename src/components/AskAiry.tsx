@@ -20,7 +20,7 @@ import {AiryResponse} from "./AiryResponse";
 import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 import {TableId} from "@airtable/blocks/types";
 import {AskAiryAboutAnythingButton} from "./AskAiryAboutAnythingButton";
-import {Tips} from "./Tips";
+import {Guide} from "./Guide";
 
 export const AskAiry = ({
                             isLicensedUser,
@@ -169,10 +169,6 @@ export const AskAiry = ({
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Ask Airy anything..."
                 />
-                        <TextButton margin={1} onClick={() => setTipsDialogOpen(true)} width='fit-content' icon='info'>
-                            Guide to using Ask Airy
-                        </TextButton>
-                        <Tips tipsDialogOpen={tipsDialogOpen} setTipsDialogOpen={setTipsDialogOpen}/>
                     </FormField>
                 </Box>
 

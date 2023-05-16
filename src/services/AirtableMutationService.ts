@@ -17,7 +17,6 @@ export class AirtableMutationService {
         let i = 0;
         const fulfilledPromiseValues = [];
         while (i < recordsOrRecordIds.length) {
-            console.log(`Processing batch ${i} to ${Math.min(recordsOrRecordIds.length, i + this.BATCH_SIZE)}`);
             const recordBatch = recordsOrRecordIds.slice(i, Math.min(recordsOrRecordIds.length, i + this.BATCH_SIZE));
             fulfilledPromiseValues.push(await batchWriteOperation(recordBatch));
             i += this.BATCH_SIZE;

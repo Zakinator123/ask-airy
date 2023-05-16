@@ -31,7 +31,11 @@ export const About = () => {
         <Text as='h3' fontWeight={600} size='xlarge'>About:</Text>
         <Box padding='0.7rem'>
             <Text>
-                About text here.
+                Ask Airy is an Airtable extension that enables you to intuitively
+                search and query your data with natural language using
+                the power of AI.
+                <br/><br/>
+                Head over to the settings tab to get started!
             </Text>
         </Box>
         <br/>
@@ -42,11 +46,13 @@ export const About = () => {
                 When you use a table with Ask Airy, a 'Data Index' field will be created.
                 When you ask your first query, Ask Airy will populate this field with AI-generated data
                 (embeddings) that will be used to find the most relevant records for your queries.
-                <br/>
-                Record updates will cause the Data Index field for that record to be updated the next time you use Ask Airy.
-                <br/>
+                <br/><br/>
                 Once the Data Index is built and the most relevant records are found for your query,
                 Airy will try to analyze as many of those records as it can to formulate an answer to your query.
+                <br/><br/>
+                Any record updates will cause the Data Index field for that record to be updated the next time you use Ask
+                Airy.
+                <br/>
             </Text>
         </Box>
         <br/>

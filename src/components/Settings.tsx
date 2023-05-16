@@ -3,6 +3,7 @@ import {
     Box,
     Button,
     FieldIcon,
+    FormField,
     Heading,
     Icon,
     Input,
@@ -27,7 +28,6 @@ import {AiryTableConfigDialog} from "./AiryTableConfigDialog";
 import {Toast} from "./Toast";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
 import {aiProviderData, defaultConfig} from "../types/Constants";
-import {FormFieldLabelWithTooltip} from "./FormFieldLabelWithTooltip";
 
 loadCSSFromString(`
 .settings-container {
@@ -149,7 +149,15 @@ export const Settings = ({
                  width='100%'
                  className='ai-config-container'>
                 <Heading marginBottom={3}>Airy AI Settings</Heading>
-
+                <Text>Ask Airy uses OpenAI's APIs under the hood.</Text>
+                <br/>
+                <Text margin={1}>Sign up for an OpenAI account <Link
+                    href='https://platform.openai.com/signup'
+                    target='_blank'>here.</Link>
+                    &nbsp;Generate an API key <Link
+                        href='https://platform.openai.com/account/api-keys'
+                        target='_blank'>here.</Link>
+                </Text>
                 {/*<SelectButtons*/}
                 {/*    value={aiProviderName}*/}
                 {/*    onChange={newValue => setAiProviderName(newValue as AIProviderName)}*/}
@@ -159,30 +167,28 @@ export const Settings = ({
                 {/*            label: `${aiProviderData["openai"].prettyName}`*/}
                 {/*        }]}*/}
                 {/*/>*/}
-
+                <br/><br/>
                 <Box width='100%'>
-
-                    <FormFieldLabelWithTooltip fieldLabel={`${aiProviderData[aiProviderName].prettyName} API Key`}
-                                               fieldLabelTooltip='Ask Airy uses the OpenAI API under the hood.'/>
-                    <Input
-                        placeholder={`Enter your ${aiProviderData[aiProviderName].prettyName} API key`}
-                        type='text'
-                        required={true}
-                        value={aiProvidersConfiguration[aiProviderName].apiKey}
-                        onChange={e => {
-                            const newValue = e.target.value;
-                            setAiProvidersConfiguration(aiProvidersConfiguration => {
-                                aiProvidersConfiguration[aiProviderName].apiKey = newValue;
-                            });
-                        }}
-                    />
-                    <Text margin={1} size='small'>Sign up <Link size='small'
-                                                                href='https://platform.openai.com/signup'
-                                                                target='_blank'>here.</Link>
-                        &nbsp;Generate an API key <Link size='small' href='https://platform.openai.com/account/api-keys'
-                                                  target='_blank'>here.</Link>
-                    </Text>
+                    <FormField label={`${aiProviderData[aiProviderName].prettyName} API Key`}>
+                        <Input
+                            placeholder={`Enter your ${aiProviderData[aiProviderName].prettyName} API key`}
+                            type='text'
+                            required={true}
+                            value={aiProvidersConfiguration[aiProviderName].apiKey}
+                            onChange={e => {
+                                const newValue = e.target.value;
+                                setAiProvidersConfiguration(aiProvidersConfiguration => {
+                                    aiProvidersConfiguration[aiProviderName].apiKey = newValue;
+                                });
+                            }}
+                        />
+                    </FormField>
                 </Box>
+                <Text margin={1} size='small'>
+                    API usage is <Link size='small' href='https://openai.com/pricing' target='_blank'>pay-as-you-go</Link>.
+                    Airy's Data Indexing uses the embeddings API, and the cost for Ask Airy to index a table depends on the size of your tables and records.
+                    A rough guideline is that one record with 750 words of text will cost about $0.0004 to index.
+                </Text>
 
                 {/*<details>*/}
                 {/*    <summary>Advanced Configuration</summary>*/}

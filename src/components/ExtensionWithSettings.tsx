@@ -15,6 +15,7 @@ import {Toast} from "./Toast";
 import {LicenseStatus} from "../types/OtherTypes";
 import {AskAiryIcon} from "./AskAiryIcon";
 import {GlobalConfigSettingsService} from "../services/GlobalConfigSettingsService";
+import {Guide} from "./Guide";
 
 loadCSSFromString(`
 .container {
@@ -129,20 +130,16 @@ ol, ul {
         - Check for integrity of data during dot product search - test changes
         - If even 1 record is too big to fit in context window for final response - truncate the record - test this
 
-
         ---- Documentation ----
         0. Create compelling examples
         1. Create a short video showing how to use the extension
         2. Create 3 short gifs showing the extension in action
 
-        - Emphasize in the about page that you cannot ask Airy to modify any data for you. Maybe this should be in the prompt? Test this.
         - Create jekyll site for docs
         - Update gumroad license page
         - Finish marketplace submission docs
-        - Update about tab
         - Turn on linting and fix all linting errors
         - Cleanup console logging messages
-        - Rename premium classes in license component
 
         Future improvements:
         - Add streamlined feedback submission process for users
@@ -212,6 +209,10 @@ export function ExtensionWithSettings({
                     <TabText text='Ask Airy'/>
                 </Tab>
                 <Tab>
+                    <TabIcon iconName='info'/>
+                    <TabText text='Guide'/>
+                </Tab>
+                <Tab>
                     <TabIcon iconName="cog"/>
                     <TabText text='Settings'/>
                 </Tab>
@@ -241,6 +242,7 @@ export function ExtensionWithSettings({
                     </Suspense>
                 </TabPanel>
             </Box>
+            <TabPanel><Guide/></TabPanel>
             <TabPanel>
                 <Settings
                     base={base}
