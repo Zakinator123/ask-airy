@@ -62,17 +62,47 @@
                 </g>
             </g>
         </g>
-    </svg><h1 style="display: inline" class="project-name">
+    </svg>
+    <h1 style="display: inline" class="project-name">
         Ask Airy
     </h1>
     <h2 class="project-tagline"><i>Ask an AI anything about your Airtable data</i></h2>
-    <p style="font-size: 1rem; font-weight: normal; opacity: 0.7;">
-        Ask Airy is an Airtable extension that enables you to intuitively search<br/>
-        and query your data with natural language using the power of AI.
+    <p style="font-size: 1rem; font-weight: normal; opacity: 0.7; max-width: 32rem; margin: auto;">
+        Ask Airy is an Airtable extension that enables you to intuitively search and query your data with natural
+        language using the power of AI.
     </p>
-<br/>
-    <script src="https://gumroad.com/js/gumroad.js"></script>
-    <a class="gumroad-button" href="https://zoftware.gumroad.com/l/ask-airy">Start your Free Trial via </a>
+
+    <form style="margin-top: 3rem" id="signup-form">
+        <label for="email">Be the First to Know When Ask Airy Launches:</label><br>
+        <input placeholder="Enter an Email Address" type="email" id="email" name="email"
+               required> <input type="submit"
+                                value="Submit">
+        <div id="message"></div>
+    </form>
+
+    <script>
+        document.getElementById('signup-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var email = document.getElementById('email').value;
+            fetch('https://script.google.com/macros/s/AKfycbyRayIirS13rlTpJ9wiDQYoAFNeF70N7EtEAvOgySJRYevKA_9AGXniIGQAixOdGTlC/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({email: email})
+            }).then(function (response) {
+                document.getElementById('message').innerHTML = "Thanks for signing up! We'll notify you when the product is released.";
+            })
+                .catch(function (error) {
+                    document.getElementById('message').innerHTML = "Sorry, there was an error. Please try again.";
+                });
+            ;
+        });
+    </script>
+    <!--    <script src="https://gumroad.com/js/gumroad.js"></script>-->
+    <!--    <a class="gumroad-button" href="https://zoftware.gumroad.com/l/ask-airy">Start your Free Trial via </a>-->
 
     {% if site.github.is_project_page %}
     <a href="{{ site.github.repository_url }}" class="btn">View on GitHub</a>

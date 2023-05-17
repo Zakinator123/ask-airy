@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {useEffect, useState} from 'react';
 import {UseReadableStreamResult} from "../types/CoreTypes";
 
 const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAskAiryPending: (askAiryPending: boolean) => void): UseReadableStreamResult => {
@@ -16,7 +16,7 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
 
         const readData = async () => {
             try {
-                const { value, done } = await reader.read();
+                const {value, done} = await reader.read();
 
                 if (done) {
                     reader.releaseLock();
@@ -27,12 +27,21 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
 
                 setData((prevData) => prevData + decoder.decode(value));
                 readData();
-            } catch (err) {
+            } catch (err: any) {
+                if (err?.type === "MAX_TOKENS") {
+                    reader.releaseLock();
+                    setAskAiryPending(false);
+                    setData((prevData) => prevData + " \n------ \n Airy could not complete the response because it was too long.\n Try again, or adjust your query by asking Airy to be more concise.");
+                    // stream.cancel().catch((e) => console.error(e));
+                    return;
+                }
+
                 const error = err as Error;
                 console.error(error);
                 reader.releaseLock();
                 setAskAiryPending(false);
                 setData(error.message);
+                stream.cancel().catch((e) => console.error(e));
             }
         };
 
@@ -43,7 +52,7 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
         };
     }, [stream]);
 
-    return { data };
+    return {data};
 };
 
 export default useReadableStream;

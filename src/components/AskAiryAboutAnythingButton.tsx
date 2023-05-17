@@ -29,10 +29,11 @@ export const AskAiryAboutAnythingButton = ({
     useEffect(() => () => toast.dismiss(), []);
 
     const executeAskAiry = async () => {
+        setAiryResponse(undefined);
+        setStatusMessage("Asking Airy...");
         setAskAiryIsPending(true);
         setAiryResponse(undefined);
         setSearchResults(undefined);
-        setStatusMessage("Asking Airy...");
 
         const aiResponse = await askAiryService.askAiryAboutAnything(query);
         setStatusMessage('');

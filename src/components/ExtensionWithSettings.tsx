@@ -135,20 +135,9 @@ ol, ul {
         1. Create a short video showing how to use the extension
         2. Create 3 short gifs showing the extension in action
 
-        - Create jekyll site for docs
-        - Update gumroad license page
-        - Finish marketplace submission docs
+        - Generate terms/privacy policy
         - Turn on linting and fix all linting errors
         - Cleanup console logging messages
-
-        Future improvements:
-        - Add streamlined feedback submission process for users
-        - Add voice-to-text for Ask Airy
-        - Add support for gpt 4
-        - Add support for using claude's giant context window
-        - Allow for tuning context data size vs. response size
-        - Add proxy support so that users don't need to bring their own key if they don't want to
-        - Store vectors in vector DB uniquely identified by the user's license or base id instead of in Airtable
  */
 export function ExtensionWithSettings({
                                           airtableMutationService,

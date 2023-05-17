@@ -376,3 +376,50 @@ a {
 .site-footer-credits {
   color: $blockquote-text-color;
 }
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+#signup-form {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#signup-form label {
+  font-size: 16px;
+  font-weight: bold;
+  display: block;
+}
+
+#signup-form input[type="email"] {
+  width: 300px;
+  padding: 10px;
+  color: black;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+#signup-form input[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#signup-form input[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+#message {
+  clear: both;
+  margin-top: 15px;
+  font-size: 14px;
+  color: white;
+}

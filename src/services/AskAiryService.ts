@@ -160,7 +160,6 @@ export class AskAiryService implements AskAiryServiceInterface {
 
         console.log(`Query to be embedded for semantic search: ${hypotheticalSemanticSearchResult}`)
 
-
         const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSemanticSearchResult);
 
         const dotProductPerformance = window.performance;
@@ -180,7 +179,8 @@ export class AskAiryService implements AskAiryServiceInterface {
 
             const dotProduct = this.computeDotProduct(embeddedQuery, airyIndexData.embedding);
 
-            if (heap.size() < 1000) {
+            // TODO: Make num results configurable?
+            if (heap.size() < 100) {
                 heap.push([dotProduct, record]);
             } else if (dotProduct > heap.peek()![0]) {
                 heap.pop();

@@ -53,11 +53,6 @@ export const AskAiryAboutTableButton = ({
     }
 
     const executeDataIndexing: () => Promise<{ executeSearchAfterIndexing: boolean }> = async () => {
-        setAskAiryIsPending(true);
-        setAiryResponse(undefined);
-        setSearchResults(undefined);
-        setStatusMessage('');
-
         setStatusMessage("Checking if Airy's data index is up to date...")
         const staleOrUnIndexedRecords = await askAiryService.getRecordsWithStaleAiryIndexData(airyTable);
 
@@ -169,6 +164,11 @@ export const AskAiryAboutTableButton = ({
                 containerId: 'ask-airy-error'
             });
         } else {
+            setAiryResponse(undefined);
+            setStatusMessage('');
+            setAskAiryIsPending(true);
+            setAiryResponse(undefined);
+            setSearchResults(undefined);
             const {executeSearchAfterIndexing} = await executeDataIndexing();
             if (executeSearchAfterIndexing) {
                 await executeSearchAndAskAiry()

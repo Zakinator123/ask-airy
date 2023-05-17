@@ -7,7 +7,7 @@ title: Ask Airy
 
 Discover the power of AI with Ask Airy.
 
-Ask Airy revolutionizes your search capabilities, enabling you to intuitively search for records using natural language.
+Ask Airy revolutionizes your Airtable search capabilities, enabling you to intuitively search for records using natural language.
 
 But Ask Airy is more than a search tool — it's your data consultant.
 You can ask direct questions about your Airtable data, and Ask Airy will provide insights that previously only a human
@@ -19,7 +19,7 @@ Ask Airy isn't limited to your Airtable data either. You can ask any question, f
 management?"
 to "Write me a blog post about how to use Airtable as a CRM solution".
 
-Start your [free trial now](https://www.zoftware-solutions.com/l/ask-airy)!
+[//]: # (Start your [free trial now]&#40;https://www.zoftware-solutions.com/l/ask-airy&#41;!)
 
 ## Support:
 
@@ -28,7 +28,7 @@ Feedback, feature requests, bug reports, and questions can be submitted via
 - [GitHub Issues](https://github.com/Zakinator123/ask-airy/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
 - Emailing me at support@zoftware-solutions.com
 
-If you want to say **thank you** and/or support active development of Checkout Cart:
+If you want to say **thank you** and/or support active development of Ask Airy:
 
 - Add a [GitHub Star](https://github.com/Zakinator123/ask-airy) to the project.
 - Consider purchasing a [premium license](https://www.zoftware-solutions.com/l/ask-airy).

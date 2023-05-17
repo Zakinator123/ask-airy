@@ -1,16 +1,5 @@
 import React, {Suspense, useState} from "react";
-import {
-    Box,
-    Button,
-    FormField,
-    Heading,
-    Loader,
-    RecordCardList,
-    Select,
-    Text,
-    TextButton,
-    ViewPicker
-} from "@airtable/blocks/ui";
+import {Box, Button, FormField, Heading, Loader, RecordCardList, Select, Text, ViewPicker} from "@airtable/blocks/ui";
 import {Base, Record, Table, View, ViewType} from "@airtable/blocks/models";
 import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAiryAboutTableButton} from "./AskAiryAboutTableButton";
@@ -20,7 +9,7 @@ import {AiryResponse} from "./AiryResponse";
 import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 import {TableId} from "@airtable/blocks/types";
 import {AskAiryAboutAnythingButton} from "./AskAiryAboutAnythingButton";
-import {Guide} from "./Guide";
+import ErrorBoundary from "./ErrorBoundary";
 
 export const AskAiry = ({
                             isLicensedUser,
@@ -44,7 +33,6 @@ export const AskAiry = ({
     const [airyResponse, setAiryResponse] = useState<ReadableStream<Uint8Array> | string | undefined>(undefined);
     const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
-    const [tipsDialogOpen, setTipsDialogOpen] = useState(false);
     const [dataIndexingPending, setDataIndexingPending] = useState<boolean>(false);
 
     let selectedTable: Table | undefined = undefined;
@@ -182,12 +170,16 @@ export const AskAiry = ({
             {searchResults && selectedTableConfig &&
                 <Box width='85%' height='500px' marginBottom={5}>
                     <Heading>Potentially Relevant Records:</Heading>
-                    <RecordCardList
-                        fields={selectedTableConfig.airyFields}
-                        height='500px'
-                        style={{height: '500px'}}
-                        records={searchResults}
-                    />
+                    <ErrorBoundary
+                        fallback={<Text>Something went wrong while rendering the records. This could happen if a record
+                            in the list was deleted.</Text>}>
+                        <RecordCardList
+                            fields={selectedTableConfig.airyFields}
+                            height='500px'
+                            style={{height: '500px'}}
+                            records={searchResults.filter(record => record.isDeleted === false)}
+                        />
+                    </ErrorBoundary>
                 </Box>
             }
         </>
