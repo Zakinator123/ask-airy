@@ -107,7 +107,7 @@ export const AiryTableConfigDialog = ({setAiryTableConfigs, airyTableConfigs, ba
                             table: newAiryTable,
                             fields: newAiryTableFields,
                             airyDataIndexFields: {
-                                openai: undefined,
+                                openai: newAiryTable.fields.find(field => field.name === aiProviderData.openai.indexFieldName),
                             }
                         }]);
                         setNewAiryTable(undefined);

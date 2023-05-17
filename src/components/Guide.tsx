@@ -26,7 +26,6 @@ export const Guide = () =>
                         If Airy's responses are not satisfactory, experiment with tweaking your queries.
                         Give Airy more context about what you would like it to answer.
                     </li>
-                    <li>Let Airy know</li>
                 </ul>
             </Box>
             <Heading size='small'>Examples Tables and Queries:</Heading>
