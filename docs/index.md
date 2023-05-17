@@ -31,5 +31,6 @@ Feedback, feature requests, bug reports, and questions can be submitted via
 If you want to say **thank you** and/or support active development of Ask Airy:
 
 - Add a [GitHub Star](https://github.com/Zakinator123/ask-airy) to the project.
-- Consider purchasing a [premium license](https://www.zoftware-solutions.com/l/ask-airy).
 - Consider [buying me a coffee](https://www.buymeacoffee.com/zakey) ☕️
+
+[//]: # (- Consider purchasing a [premium license]&#40;https://www.zoftware-solutions.com/l/ask-airy&#41;.)
