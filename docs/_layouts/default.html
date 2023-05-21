@@ -73,17 +73,24 @@
     </p>
 
     <form style="margin-top: 3rem; margin-bottom: 2rem;" id="signup-form">
-        <label for="email">Be the First to Know When Ask Airy Launches:</label><br>
-        <input placeholder="Enter an Email Address" type="email" id="email" name="email"
-               required> <input type="submit"
-                                value="Submit">
+        <label for="email">Join the waitlist:</label><br>
+        <input placeholder="Enter an Email Address" type="email" id="email" name="email" required>
+        <input type="submit" value="Submit" id="submit-button">
         <div id="message"></div>
     </form>
 
     <script>
         document.getElementById('signup-form').addEventListener('submit', function (e) {
             e.preventDefault();
+
             var email = document.getElementById('email').value;
+            var submitButton = document.getElementById('submit-button');
+            var messageDiv = document.getElementById('message');
+
+            // Disable button and provide user feedback
+            submitButton.disabled = true;
+            messageDiv.innerHTML = "Submitting your email...";
+
             fetch('https://script.google.com/macros/s/AKfycbyRayIirS13rlTpJ9wiDQYoAFNeF70N7EtEAvOgySJRYevKA_9AGXniIGQAixOdGTlC/exec', {
                 method: 'POST',
                 mode: 'no-cors',
@@ -92,15 +99,18 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({email: email})
-            }).then(function (response) {
-                document.getElementById('message').innerHTML = "Thanks for signing up! We'll notify you when the product is released.";
             })
+                .then(function (response) {
+                    messageDiv.innerHTML = "Thanks for signing up! We'll notify you when you can use Ask Airy.";
+                })
                 .catch(function (error) {
-                    document.getElementById('message').innerHTML = "Sorry, there was an error. Please try again.";
+                    messageDiv.innerHTML = "Sorry, there was an error. Please try again.";
+                    // Re-enable button if there was an error
+                    submitButton.disabled = false;
                 });
-            ;
         });
     </script>
+
     <!--    <script src="https://gumroad.com/js/gumroad.js"></script>-->
     <!--    <a class="gumroad-button" href="https://zoftware.gumroad.com/l/ask-airy">Start your Free Trial via </a>-->
 
