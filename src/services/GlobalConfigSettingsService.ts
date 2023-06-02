@@ -26,6 +26,20 @@ export class GlobalConfigSettingsService {
             errorMessage: 'You must enter an API key.'
         }
 
+        // Test OpenAI API Key by calling the models endpoint
+        const openAIModelsResponse = await fetch('https://api.openai.com/v1/models', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${extensionConfiguration.aiProvidersConfiguration[extensionConfiguration.currentAiProvider]!.apiKey}`
+            }
+        });
+
+        if (!openAIModelsResponse.ok) return {
+            errorsOccurred: true,
+            errorMessage: 'The API key you entered is invalid.'
+        }
+
         if (extensionConfiguration.airyTableConfigs.length === 0) return {
             errorsOccurred: true,
             errorMessage: 'You must make at least one table accessible to Airy.'

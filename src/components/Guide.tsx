@@ -1,5 +1,17 @@
 import React from "react";
-import {Box, Heading, Link, Text} from "@airtable/blocks/ui";
+import {Box, Heading, Link, loadCSSFromString, Text} from "@airtable/blocks/ui";
+loadCSSFromString(`
+#myTable {
+  border: 1px solid black;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+#myTable th, #myTable td {
+  border: 1px solid black;
+  padding: 10px;
+}
+`);
 
 export const Guide = () =>
     <Box padding={4}><Heading>Guide to Using Ask Airy</Heading>
@@ -29,41 +41,39 @@ export const Guide = () =>
                 </ul>
             </Box>
             <Heading size='small'>Examples Tables and Queries:</Heading>
+            <br/>
             <Box>
-                <table>
+                <table id='myTable'>
+                    <tbody>
                     <tr>
-                        <td><u>Table Name</u></td>
-                        <td><u>Query</u></td>
+                        <th><u>Table Name</u></th>
+                        <th><u>Query</u></th>
                     </tr>
-                    <br/>
                     <tr>
                         <td>Product Reviews</td>
                         <td>Find and summarize negative reviews. Create a list of action items for improving the
                             product design to address the feedback.
                         </td>
                     </tr>
-                    <br/>
                     <tr>
                         <td>Blog Posts</td>
                         <td>Find the blog where I explain how to implement a CRM solution on Airtable. Create a
                             distilled version of the blog post.
                         </td>
                     </tr>
-                    <br/>
                     <tr>
                         <td>Book Library</td>
                         <td>Find some books in this library that would be appropriate for my 8 year old who's
                             interested in math and science. Explain why the books would be appropriate.
                         </td>
                     </tr>
-                    <br/>
                     <tr>
                         <td>(No Table)</td>
                         <td>Write me an Airtable script that finds and deletes all records with the words 'delete
                             me'.
                         </td>
                     </tr>
-
+                    </tbody>
                 </table>
 
 

@@ -145,32 +145,10 @@ export const License = ({
         }
     }
 
-    let infoMessage;
-    switch (licenseStatus) {
-        case 'license-active':
-            infoMessage = "✅  License registered successfully!";
-            break;
-        case "invalid":
-            infoMessage = "❌  Your license is no longer valid.";
-            break;
-        case 'expired':
-            infoMessage = "❌  Your license subscription is no longer active." +
-                " Either restart your existing subscription on Gumroad or purchase and verify a new subscription license to continue using the extension.";
-            break;
-        case 'unable-to-verify':
-            infoMessage = "❌  Unable to verify license. Check your network connection and reload the extension.";
-            break;
-        case 'no-license':
-            infoMessage = 'A license is required to use Ask Airy.';
-    }
 
     return <>
         <Box className='centered-premium-container'>
-            <Box>{
-                licenseStatus === 'no-license'
-                    ? <LicenseRequiredMessage/>
-                    : <Text size='large' maxWidth='450px' marginBottom='1rem'>{infoMessage}</Text>
-            }</Box>
+            <Box><LicenseRequiredMessage licenseStatus={licenseStatus}/></Box>
             <Box className='premium-form'>
                 <FormField
                     className='premium-form-field'

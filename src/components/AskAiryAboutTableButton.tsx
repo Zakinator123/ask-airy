@@ -40,6 +40,8 @@ export const AskAiryAboutTableButton = ({
 }) => {
     useEffect(() => () => toast.dismiss(), []);
     let tableOrViewForAskAiry: View | Table;
+
+
     tableOrViewForAskAiry = selectedView ? selectedView : airyTableConfig.table;
     const records = useRecords(tableOrViewForAskAiry, {fields: [airyTableConfig.dataIndexField.id, ...airyTableConfig.airyFields]});
 

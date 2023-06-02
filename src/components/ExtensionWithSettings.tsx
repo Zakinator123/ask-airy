@@ -223,7 +223,7 @@ export function ExtensionWithSettings({
                         <AskAiryWrapper
                             airtableMutationService={airtableMutationService}
                             extensionConfiguration={extensionConfig}
-                            isLicensedUser={licenseStatus === 'license-active'}
+                            licenseStatus={licenseStatus}
                             askAiryIsPending={transactionIsProcessing}
                             setAskAiryIsPending={setTransactionIsProcessing}
                             base={base}

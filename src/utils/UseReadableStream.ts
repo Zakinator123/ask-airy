@@ -32,7 +32,6 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
                     reader.releaseLock();
                     setAskAiryPending(false);
                     setData((prevData) => prevData + " \n------ \n Airy could not complete the response because it was too long.\n Try again, or adjust your query by asking Airy to be more concise.");
-                    // stream.cancel().catch((e) => console.error(e));
                     return;
                 }
 

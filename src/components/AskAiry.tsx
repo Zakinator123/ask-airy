@@ -1,5 +1,16 @@
 import React, {Suspense, useState} from "react";
-import {Box, Button, FormField, Heading, Loader, RecordCardList, Select, Text, ViewPicker} from "@airtable/blocks/ui";
+import {
+    Box,
+    Button,
+    FormField,
+    Heading,
+    Loader,
+    RecordCardList,
+    Select,
+    Text,
+    useRecordById,
+    ViewPicker
+} from "@airtable/blocks/ui";
 import {Base, Record, Table, View, ViewType} from "@airtable/blocks/models";
 import {AskAiryServiceInterface} from "../types/CoreTypes";
 import {AskAiryAboutTableButton} from "./AskAiryAboutTableButton";
@@ -10,16 +21,17 @@ import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 import {TableId} from "@airtable/blocks/types";
 import {AskAiryAboutAnythingButton} from "./AskAiryAboutAnythingButton";
 import ErrorBoundary from "./ErrorBoundary";
+import {LicenseStatus} from "../types/OtherTypes";
 
 export const AskAiry = ({
-                            isLicensedUser,
+                            licenseStatus,
                             askAiryIsPending,
                             setAskAiryIsPending,
                             askAiryService,
                             airyTableConfigs,
                             base
                         }: {
-    isLicensedUser: boolean,
+    licenseStatus: LicenseStatus,
     askAiryIsPending: boolean,
     setAskAiryIsPending: (pending: boolean) => void,
     askAiryService: AskAiryServiceInterface,
@@ -34,6 +46,8 @@ export const AskAiry = ({
     const [numRelevantRecordsUsedInAiryResponse, setNumRelevantRecordsUsedInAiryResponse] = useState<number>(0);
     const [query, setQuery] = useState("");
     const [dataIndexingPending, setDataIndexingPending] = useState<boolean>(false);
+
+    const isLicensedUser = licenseStatus === 'license-active';
 
     let selectedTable: Table | undefined = undefined;
     let selectedTableConfig: AiryTableConfigWithDefinedDataIndexField | undefined = undefined;
@@ -93,7 +107,7 @@ export const AskAiry = ({
                 maxWidth: '500px',
                 width: '100%'
             }}>
-                {!isLicensedUser && <LicenseRequiredMessage/>}
+                {!isLicensedUser && <LicenseRequiredMessage licenseStatus={licenseStatus}/>}
                 <Box>
                     <FormField label='What do you want to ask Airy about?'>
                         <Select

@@ -8,6 +8,8 @@ import {OpenAIService} from "../services/OpenAIService";
 import {Base} from "@airtable/blocks/models";
 import {removeDeletedTablesAndFieldsFromAiryTableConfigs} from "../utils/RandomUtils";
 import {AIService} from "../types/CoreTypes";
+import {LicenseStatus} from "../types/OtherTypes";
+import {LicenseRequiredMessage} from "./LicenseRequiredMessage";
 
 loadCSSFromString(`
 .centered-container {
@@ -80,7 +82,7 @@ const getValidatedAiryTableConfigs = (extensionConfiguration: ExtensionConfigura
 const AskAiryWrapper = ({
                             airtableMutationService,
                             extensionConfiguration,
-                            isLicensedUser,
+                            licenseStatus,
                             askAiryIsPending,
                             setAskAiryIsPending,
                             base
@@ -88,7 +90,7 @@ const AskAiryWrapper = ({
                             {
                                 airtableMutationService: AirtableMutationService,
                                 extensionConfiguration: ExtensionConfiguration | undefined,
-                                isLicensedUser: boolean,
+                                licenseStatus: LicenseStatus,
                                 askAiryIsPending: boolean,
                                 setAskAiryIsPending: (pending: boolean) => void,
                                 base: Base
@@ -98,10 +100,11 @@ const AskAiryWrapper = ({
 
     return validatedAiryTableConfigs.noValidAiryTables
         ? <Box className='centered-container'>
+            <LicenseRequiredMessage licenseStatus={licenseStatus}/>
             <Text size='large'>{validatedAiryTableConfigs.errorMessage}</Text>
         </Box>
         : <AskAiry
-            isLicensedUser={isLicensedUser}
+            licenseStatus={licenseStatus}
             askAiryIsPending={askAiryIsPending}
             setAskAiryIsPending={setAskAiryIsPending}
             askAiryService={new AskAiryService(validatedAiryTableConfigs.aiService, airtableMutationService)}
