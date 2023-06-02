@@ -67,7 +67,7 @@ export class AskAiryService implements AskAiryServiceInterface {
                 });
 
             if (!dataIndexingPending.current) {
-                console.error('Data indexing canceled!!')
+                console.log('Data indexing canceled!!')
                 // Data indexing canceled
                 break;
             }
@@ -87,10 +87,6 @@ export class AskAiryService implements AskAiryServiceInterface {
                                                   recordsToAskAiryAbout
                                               }: AskAiryTable): Promise<Array<RecordToIndex>> => {
         const recordsToUpdate: RecordToIndex[] = [];
-
-
-        const checkingForStaleRecordsAndGeneratingNewHashesPerformance = window.performance;
-        const startTime = checkingForStaleRecordsAndGeneratingNewHashesPerformance.now();
         for (const record of recordsToAskAiryAbout) {
             const serializedDataToEmbed = serializeRecordForEmbeddings(record, {
                 airyFields: airyFields,
@@ -111,9 +107,6 @@ export class AskAiryService implements AskAiryServiceInterface {
                 }
             }
         }
-        const endTime = checkingForStaleRecordsAndGeneratingNewHashesPerformance.now();
-        console.log(`Checking for stale records and generating new hashes took ${endTime - startTime} milliseconds.`)
-
         return recordsToUpdate;
     }
 
@@ -158,12 +151,8 @@ export class AskAiryService implements AskAiryServiceInterface {
             table
         }, query);
 
-        console.log(`Query to be embedded for semantic search: ${hypotheticalSemanticSearchResult}`)
-
         const embeddedQuery = await this.aiService.getEmbeddingForString(hypotheticalSemanticSearchResult);
 
-        const dotProductPerformance = window.performance;
-        const startTime = dotProductPerformance.now();
         const heap = new Heap<[number, Record]>((a, b) => a[0] - b[0]);
         let recordsWithCorruptedDataIndexField = [];
         for (const record of recordsToAskAiryAbout) {
@@ -197,13 +186,9 @@ export class AskAiryService implements AskAiryServiceInterface {
                 })))
         }
 
-        const topKSearchResults = Array.from(heap.toArray())
+        return Array.from(heap.toArray())
             .sort((a, b) => b[0] - a[0])
             .map(recordWithDotProduct => recordWithDotProduct[1]);
-
-        const endTime = dotProductPerformance.now();
-        console.log(`Dot product calculations took ${endTime - startTime} milliseconds.`)
-        return topKSearchResults;
     }
 
 

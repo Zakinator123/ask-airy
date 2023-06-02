@@ -32,8 +32,7 @@ export const About = () => {
         <Box padding='0.7rem'>
             <Text>
                 Ask Airy is an Airtable extension that enables you to intuitively
-                search and query your data with natural language using
-                the power of AI.
+                search and query your data with natural language using AI.
                 <br/><br/>
                 Head over to the settings tab to get started!
             </Text>

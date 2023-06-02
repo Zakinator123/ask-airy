@@ -8,7 +8,6 @@ import {
     RecordCardList,
     Select,
     Text,
-    useRecordById,
     ViewPicker
 } from "@airtable/blocks/ui";
 import {Base, Record, Table, View, ViewType} from "@airtable/blocks/models";

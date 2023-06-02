@@ -87,10 +87,7 @@ export class OpenAIService implements AIService {
         ];
 
         try {
-            const performance2 = window.performance;
-            const startTime2 = performance2.now();
-
-            const response2 = await this.openai.createChatCompletion({
+            const response = await this.openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
                 messages: messages,
                 max_tokens: 400 - this.calculateTokensInChatCompletionMessages(messages),
@@ -98,10 +95,7 @@ export class OpenAIService implements AIService {
                 top_p: 1,
                 n: 1,
             })
-            const endTime2 = performance2.now();
-            console.log(`Latency of gpt-3.5-turbo Hypothetical result generation is is: ${endTime2 - startTime2} ms`);
-            const gpt35Response = response2.data.choices[0]!.message!.content!;
-            return gpt35Response;
+            return response.data.choices[0]!.message!.content!;
         } catch (error: any) {
             console.error("Error in getHypotheticalSearchResultGivenUserQuery");
             if (error.response) {
