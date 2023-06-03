@@ -35,7 +35,7 @@ export const Guide = () =>
                         your data.
                     </li>
                     <li>
-                        If Airy's responses are not satisfactory, experiment with tweaking your queries.
+                        If Airy&apos;s responses are not satisfactory, experiment with tweaking your queries.
                         Give Airy more context about what you would like it to answer.
                     </li>
                 </ul>
@@ -63,14 +63,14 @@ export const Guide = () =>
                     </tr>
                     <tr>
                         <td>Book Library</td>
-                        <td>Find some books in this library that would be appropriate for my 8 year old who's
+                        <td>Find some books in this library that would be appropriate for my 8 year old who&apos;s
                             interested in math and science. Explain why the books would be appropriate.
                         </td>
                     </tr>
                     <tr>
                         <td>(No Table)</td>
-                        <td>Write me an Airtable script that finds and deletes all records with the words 'delete
-                            me'.
+                        <td>Write me an Airtable script that finds and deletes all records with the words &apos;delete
+                            me&apos;.
                         </td>
                     </tr>
                     </tbody>

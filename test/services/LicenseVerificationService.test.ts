@@ -18,8 +18,8 @@ describe('GumroadLicenseVerificationService', () => {
         server.use(licenseVerificationError);
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'unable-to-verify',
-            message: 'Unable to verify premium license. The license verification service is not responding as expected. Please try again later or contact the developer for support.',
+            licenseStatus: 'unable-to-verify',
+            message: 'Unable to verify license. The license verification service is not responding as expected. Please try again later or contact the developer for support.'
         });
     });
 
@@ -28,8 +28,8 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'unable-to-verify',
-            message: 'Unable to verify premium license. Please check your internet connection and reload the extension.'
+            licenseStatus: 'unable-to-verify',
+            message: 'Unable to verify license. Please check your internet connection and reload the extension.'
         });
     });
 
@@ -38,8 +38,8 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'invalid',
-            message: 'Invalid premium license. Please check your license key and try again.'
+            licenseStatus: 'invalid',
+            message: 'Invalid license. Please check your license key and try again.'
         });
     });
 
@@ -48,8 +48,8 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'expired',
-            message: 'Your premium subscription is no longer active. Restart your existing subscription or purchase and verify a new subscription license to continue using premium features.'
+            licenseStatus: 'expired',
+            message: 'Your license subscription is no longer active. Restart your existing subscription or purchase and verify a new subscription license to continue using Ask Airy.'
         });
     });
 
@@ -58,8 +58,8 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'invalid',
-            message: 'Your premium license has already been redeemed. Licenses can only be redeemed once.'
+            licenseStatus: 'invalid',
+            message: 'Your license has already been redeemed. Licenses can only be redeemed once.'
         });
     });
 
@@ -68,8 +68,8 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'invalid',
-            message: 'Invalid premium license. Please check your license key and try again.'
+            licenseStatus: 'invalid',
+            message: 'Invalid license. Please check your license key and try again.'
         });
     });
 
@@ -79,16 +79,16 @@ describe('GumroadLicenseVerificationService', () => {
 
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'unable-to-verify',
-            message: 'Unable to verify premium license. An issue occurred while parsing the license verification response. Please try again later or contact the developer for support.'
+            licenseStatus: 'unable-to-verify',
+            message: 'Unable to verify license. An issue occurred while parsing the license verification response. Please try again later or contact the developer for support.'
         });
     });
 
     it('should return premium status when verification response successful.', async () => {
         const result = await gumroadLicenseVerificationService.verifyLicense('test-license', true);
         expect(result).toEqual({
-            premiumStatus: 'premium',
-            message: 'License verified! You are now a premium user! 🎉🎉'
+            licenseStatus: 'license-active',
+            message: 'License verified! You can now use Ask Airy! 🎉🎉'
         });
     });
 });

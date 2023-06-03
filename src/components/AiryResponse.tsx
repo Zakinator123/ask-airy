@@ -9,7 +9,7 @@ export const AiryResponse = ({airyResponse, numRelevantRecordsUsedInAiryResponse
 }) => {
 
     return <Box>
-        <Heading display='inline-block'>Airy's Response </Heading>
+        <Heading display='inline-block'>Airy&apos;s Response </Heading>
         <Tooltip
             fitInWindowMode={Tooltip.fitInWindowModes.NUDGE}
             content={() => numRelevantRecordsUsedInAiryResponse == 0
@@ -31,7 +31,7 @@ export const AiryResponse = ({airyResponse, numRelevantRecordsUsedInAiryResponse
                     </Text>
                     <br/>
                     <Text margin='0.5rem' as='span' size='small' textColor='white'>
-                        Always crosscheck Airy's responses with your actual data.
+                        Always crosscheck Airy&apos;s responses with your actual data.
                     </Text>
                 </>
             }

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Box, Button, FormField, Icon, Input, Link, loadCSSFromString, Loader, Text} from "@airtable/blocks/ui";
+import {Box, Button, FormField, Icon, Input, loadCSSFromString, Loader, Text} from "@airtable/blocks/ui";
 import {GlobalConfig} from "@airtable/blocks/types";
 import {asyncAirtableOperationWrapper} from "../utils/RandomUtils";
 import {toast} from "react-toastify";

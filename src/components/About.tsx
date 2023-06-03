@@ -42,7 +42,7 @@ export const About = () => {
         <Text as='h3' fontWeight={600} size='xlarge'>How this extension works:</Text>
         <Box padding='0.7rem'>
             <Text>
-                When you use a table with Ask Airy, a 'Data Index' field will be created.
+                When you use a table with Ask Airy, a &apos;Data Index&apos; field will be created.
                 When you ask your first query, Ask Airy will populate this field with AI-generated data
                 (embeddings) that will be used to find the most relevant records for your queries.
                 <br/><br/>

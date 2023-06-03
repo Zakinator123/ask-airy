@@ -149,7 +149,7 @@ export const Settings = ({
                  width='100%'
                  className='ai-config-container'>
                 <Heading marginBottom={3}>Airy AI Settings</Heading>
-                <Text>Ask Airy uses OpenAI's APIs under the hood.</Text>
+                <Text>Ask Airy uses OpenAI&apos;s APIs under the hood.</Text>
                 <br/>
                 <Text margin={1}>Sign up for an OpenAI account <Link
                     href='https://platform.openai.com/signup'
@@ -186,7 +186,7 @@ export const Settings = ({
                 </Box>
                 <Text margin={1} size='small'>
                     API usage is <Link size='small' href='https://openai.com/pricing' target='_blank'>pay-as-you-go</Link>.
-                    Airy's Data Indexing uses the embeddings API, and the cost for Ask Airy to index a table depends on the size of your tables and records.
+                    Airy&apos;s Data Indexing uses the embeddings API, and the cost for Ask Airy to index a table depends on the size of your tables and records.
                     A rough guideline is that one record with 750 words of text will cost about $0.0004 to index.
                 </Text>
 

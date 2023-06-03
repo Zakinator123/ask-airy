@@ -7,7 +7,7 @@ const successfulLicenseVerificationResponse = {
     "uses": 0,
     "purchase": {
         "seller_id": "kL0psVL2admJSYRNs-OCMg==",
-        "product_id": "32-nPAicqbLj8B_WswVlMw==",
+        "product_id": "Y2ZB-bVqRccW_MVqLs4cUg==",
         "product_name": "licenses demo product",
         "permalink": "QMGY",
         "product_permalink": "https://sahil.gumroad.com/l/pencil",

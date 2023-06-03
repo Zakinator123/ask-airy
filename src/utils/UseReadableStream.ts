@@ -47,9 +47,14 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
         readData();
 
         return () => {
+            // TODO: Test this
+            console.log("Releasing lock");
+            reader.releaseLock();
+            console.log("Reader lock released");
             stream.cancel();
+            console.log("Stream canceled");
         };
-    }, [stream]);
+    }, [stream, setAskAiryPending]);
 
     return {data};
 };

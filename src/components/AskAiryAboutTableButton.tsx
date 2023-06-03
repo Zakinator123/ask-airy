@@ -127,8 +127,6 @@ export const AskAiryAboutTableButton = ({
 
     async function executeSearchAndAskAiry() {
         setStatusMessage("Finding records relevant to your query...");
-        // TODO: Make num results configurable
-        // TODO: Test semantic search with empty table.
         let relevantRecords: Record[] = [];
         try {
             relevantRecords = await askAiryService.executeSemanticSearchForTable(airyTable, query, 5, (numCorruptedRecords: number) => {

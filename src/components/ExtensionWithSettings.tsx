@@ -123,22 +123,6 @@ ol, ul {
 }
 `);
 
-/*
-    TODO: PATH TO PROD:
-        - If airtable mutations are hanging on index building - show toast message that user may need to refresh extension and try again later? - Test this with fast internet connection
-            - This may not even be necessary with the skip index building feature
-        - Check for integrity of data during dot product search - test changes
-        - If even 1 record is too big to fit in context window for final response - truncate the record - test this
-
-        ---- Documentation ----
-        0. Create compelling examples
-        1. Create a short video showing how to use the extension
-        2. Create 3 short gifs showing the extension in action
-
-        - Generate terms/privacy policy
-        - Turn on linting and fix all linting errors
-        - Cleanup console logging messages
- */
 export function ExtensionWithSettings({
                                           airtableMutationService,
                                           licenseVerificationService

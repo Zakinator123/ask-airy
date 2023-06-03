@@ -114,13 +114,14 @@ export class AskAiryService implements AskAiryServiceInterface {
     private isAiryIndexData(data: any, expectedEmbeddingSize: number | undefined): data is AiryIndexData {
         if (typeof data !== 'object') return false;
 
+        // TODO: Test this
         // Validate the 'hash' property
-        if (!data.hasOwnProperty('hash') || typeof data.hash !== 'string') {
+        if (!Object.prototype.hasOwnProperty.call(data, 'hash') || typeof data.hash !== 'string') {
             return false;
         }
 
         // Validate the 'embedding' property
-        if (!data.hasOwnProperty('embedding') || !Array.isArray(data.embedding)) {
+        if (!Object.prototype.hasOwnProperty.call(data, 'embedding') || !Array.isArray(data.embedding)) {
             return false;
         }
 
@@ -168,7 +169,6 @@ export class AskAiryService implements AskAiryServiceInterface {
 
             const dotProduct = this.computeDotProduct(embeddedQuery, airyIndexData.embedding);
 
-            // TODO: Make num results configurable?
             if (heap.size() < 100) {
                 heap.push([dotProduct, record]);
             } else if (dotProduct > heap.peek()![0]) {
@@ -194,10 +194,11 @@ export class AskAiryService implements AskAiryServiceInterface {
 
     askAiryAboutRelevantRecords = async ({
                                              airyDataIndexField,
-                                             recordsToAskAiryAbout,
                                              airyFields,
                                              table
-                                         }: AskAiryTable, query: string, relevantRecords: Record[]): Promise<AiryTableQueryResponse> => {
+                                         }: AskAiryTable,
+                                         query: string,
+                                         relevantRecords: Record[]): Promise<AiryTableQueryResponse> => {
 
         const serializedRecords = relevantRecords.map(record => {
             const fields = airyFields.reduce((acc, field) => {
@@ -210,7 +211,6 @@ export class AskAiryService implements AskAiryServiceInterface {
             return `"""${table.primaryField.name}:${record.name},${fields.join(', ')}"""`
         });
 
-        // TODO: Handle array bounds with heap and slicing
         return await this.aiService.answerQueryGivenRelevantAirtableContext(query, {
             airyDataIndexField: airyDataIndexField,
             airyFields: airyFields,
