@@ -114,13 +114,10 @@ export class AskAiryService implements AskAiryServiceInterface {
     private isAiryIndexData(data: any, expectedEmbeddingSize: number | undefined): data is AiryIndexData {
         if (typeof data !== 'object') return false;
 
-        // TODO: Test this
-        // Validate the 'hash' property
         if (!Object.prototype.hasOwnProperty.call(data, 'hash') || typeof data.hash !== 'string') {
             return false;
         }
 
-        // Validate the 'embedding' property
         if (!Object.prototype.hasOwnProperty.call(data, 'embedding') || !Array.isArray(data.embedding)) {
             return false;
         }

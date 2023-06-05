@@ -25,13 +25,16 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
                     return;
                 }
 
-                setData((prevData) => prevData + decoder.decode(value));
+                const decodedValue = decoder.decode(value);
+
+                setData((prevData) => prevData + decodedValue);
                 readData();
             } catch (err: any) {
                 if (err?.type === "MAX_TOKENS") {
                     reader.releaseLock();
                     setAskAiryPending(false);
                     setData((prevData) => prevData + " \n------ \n Airy could not complete the response because it was too long.\n Try again, or adjust your query by asking Airy to be more concise.");
+                    stream.cancel().catch((e) => console.error(e));
                     return;
                 }
 
@@ -47,12 +50,7 @@ const useReadableStream = (stream: ReadableStream<Uint8Array> | undefined, setAs
         readData();
 
         return () => {
-            // TODO: Test this
-            console.log("Releasing lock");
             reader.releaseLock();
-            console.log("Reader lock released");
-            stream.cancel();
-            console.log("Stream canceled");
         };
     }, [stream, setAskAiryPending]);
 
