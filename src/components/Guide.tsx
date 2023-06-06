@@ -1,5 +1,6 @@
 import React from "react";
 import {Box, Heading, Link, loadCSSFromString, Text} from "@airtable/blocks/ui";
+
 loadCSSFromString(`
 #myTable {
   border: 1px solid black;
@@ -23,6 +24,26 @@ export const Guide = () =>
                 href='mailto:support@zoftware-solutions.com'>support@zoftware-solutions.com</Link>.
             </Text>
             <br/>
+            <Heading size='small'>Limitations:</Heading>
+            <Box>
+                <ul>
+                    <li>Using very large tables with Ask Airy may be slow or impossible, especially on slow internet
+                        connections.
+                    </li>
+                    <li>Airy can only analyze a limited number of records at once. The number of records depends on
+                        the amount of data in the records.
+                    </li>
+                    <li>Airy may be able to analyze numerical data in limited sets of records with limited accuracy,
+                        but is incapable of conducting numerical data analysis across an entire table.
+                    </li>
+                    <li>Airy is not a chatbot and will not remember previous questions.</li>
+                    <li>Airy cannot create, edit, or delete new records (except for data in the Data Index field).
+                    </li>
+                    <li>Ask Airy relies on OpenAI APIs under the hood, which can sometimes be flaky.</li>
+                    <li>If asked to write airtable scripts or formulas, Airy may produce incorrect syntax.</li>
+                </ul>
+            </Box>
+            <br/>
             <Heading size='small'>Tips:</Heading>
             <Box>
                 <ul>
@@ -40,7 +61,8 @@ export const Guide = () =>
                     </li>
                 </ul>
             </Box>
-            <Heading size='small'>Examples Tables and Queries:</Heading>
+            <br/>
+            <Heading size='small'>Hypothetical Example Tables and Queries:</Heading>
             <br/>
             <Box>
                 <table id='myTable'>
@@ -56,10 +78,8 @@ export const Guide = () =>
                         </td>
                     </tr>
                     <tr>
-                        <td>Blog Posts</td>
-                        <td>Find the blog where I explain how to implement a CRM solution on Airtable. Create a
-                            distilled version of the blog post.
-                        </td>
+                        <td>Emails</td>
+                        <td>Find the email conversation between Bob and I where we talk about XYZ. When did I tell Bob his invoice would be due?</td>
                     </tr>
                     <tr>
                         <td>Book Library</td>
@@ -77,24 +97,6 @@ export const Guide = () =>
                 </table>
 
 
-            </Box>
-            <br/>
-            <Heading size='small'>Limitations:</Heading>
-            <Box>
-                <ul>
-                    <li>Airy is not a chatbot and will not remember previous questions.</li>
-                    <li>Airy cannot create, edit, or delete new records (except for data in the Data Index field).
-                    </li>
-                    <li>Airy can only analyze a limited number of records at once. The number of records depends on
-                        the amount of data in the records.
-                    </li>
-                    <li>Airy may be able to analyze numerical data in limited sets of records with limited accuracy,
-                        but is incapable of conducting numerical data analysis across an entire table.
-                    </li>
-                    <li>Using large tables with Ask Airy may be slow, especially on slow internet connections.</li>
-                    <li>Ask Airy relies on OpenAI APIs under the hood, which can sometimes be flaky.</li>
-                    <li>If asked to write airtable scripts or formulas, Airy may produce incorrect syntax.</li>
-                </ul>
             </Box>
             <br/>
         </Box>

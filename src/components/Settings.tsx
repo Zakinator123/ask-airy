@@ -213,7 +213,7 @@ export const Settings = ({
                 <Heading>Tables Accessible to Airy</Heading>
 
                 <Box display='flex' flexWrap='wrap' justifyContent='center'>
-                    {airyTableConfigs.map((airyTableConfig, index) =>
+                    {sanitizeAiryTableConfigs.airyTableConfigs.map((airyTableConfig, index) =>
                         <Box maxWidth='350px' margin={3} border='default' key={index} padding={3} display='flex'
                              flexDirection='column'
                              justifyContent='space-between'>
