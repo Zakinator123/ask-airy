@@ -1,4 +1,3 @@
-import {xxhash64} from "hash-wasm";
 import {Record} from "@airtable/blocks/models";
 import Heap from "heap-js";
 import {
@@ -13,6 +12,7 @@ import {
 } from "../types/CoreTypes";
 import {AirtableMutationService} from "../services/AirtableMutationService";
 import {serializeRecordForEmbeddings} from "../utils/RandomUtils";
+import XXH from 'xxhashjs';
 
 export class AskAiryService implements AskAiryServiceInterface {
     private aiService: AIService;
@@ -92,7 +92,10 @@ export class AskAiryService implements AskAiryServiceInterface {
                 airyFields: airyFields,
                 airyDataIndexField: airyDataIndexField
             });
-            const newHash = await xxhash64(serializedDataToEmbed, 420, 6969);
+
+            var newHash = XXH.h32(serializedDataToEmbed, 0xABCD).toString(16)
+
+            // const newHash = await xxhash64(serializedDataToEmbed, 420, 6969);
 
             const currentRecordAiryIndexData = record.getCellValueAsString(airyDataIndexField.id);
             if (currentRecordAiryIndexData === '') {

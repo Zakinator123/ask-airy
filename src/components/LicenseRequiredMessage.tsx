@@ -20,7 +20,6 @@ export const LicenseRequiredMessage = ({licenseStatus}: { licenseStatus: License
             break;
         case 'unable-to-verify':
             infoMessage = "❌  Unable to verify license. Check your network connection and reload the extension.";
-            licenseButtonMessage = 'Start Free Trial';
             break;
         case 'no-license':
             infoMessage = 'A license is required to use Ask Airy.';
