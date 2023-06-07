@@ -46,6 +46,15 @@ export class AskAiryService implements AskAiryServiceInterface {
 
             if (currentAirtableWritePromise !== undefined) await currentAirtableWritePromise;
 
+            await this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, embeddings.map(recordIndexData => (
+                {
+                    id: recordIndexData.recordId,
+                    fields: {
+                        [airyTable.airyDataIndexField.id]: ''
+                    }
+                }
+            )));
+
             currentAirtableWritePromise = this.AirtableMutationService.updateRecordsInTableAsync(airyTable.table, embeddings.map(recordIndexData => (
                 {
                     id: recordIndexData.recordId,

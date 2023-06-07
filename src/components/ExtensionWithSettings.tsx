@@ -141,7 +141,7 @@ export function ExtensionWithSettings({
     const licenseDefined: boolean = license !== undefined;
     const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(licenseDefined ? 'license-active' : 'no-license');
 
-    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 1 : 0);
+    const [tabIndex, setTabIndex] = useState(extensionConfig === undefined ? 4 : 0);
 
     const updatePending = configurationUpdatePending || transactionIsProcessing || premiumUpdatePending;
 

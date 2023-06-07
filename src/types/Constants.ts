@@ -3,7 +3,7 @@ import {AIProviderName, AIProviderOptions, ExtensionConfiguration} from "./Confi
 export const aiProviderData: Record<AIProviderName, AIProviderOptions> = {
     openai: {
         prettyName: 'OpenAI',
-        indexFieldName: 'Ask Airy Data Index - OpenAI',
+        indexFieldName: 'Ask Airy Data Index',
         embeddingModelSelectOptions: [{value: 'text-embedding-ada-002', label: 'text-embedding-ada-002'}]
     },
 }
