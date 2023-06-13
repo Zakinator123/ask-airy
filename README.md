@@ -11,8 +11,17 @@ An Airtable AI assistant enabling semantic search and LLM-powered Q&A
 <div align="center">
 <br />
 
-[![Project license](https://img.shields.io/github/license/Zakinator123/checkout-cart.svg?style=flat-square)](LICENSE)
+[![Project license](https://img.shields.io/github/license/Zakinator123/ask-airy.svg?style=flat-square)](LICENSE)
 ![Build](https://github.com/Zakinator123/ask-airy/actions/workflows/build.yml/badge.svg)
+
+
+<br/>
+<details>
+<summary>See it in Action</summary>
+<img src="./assets/screenshots/demo.gif">
+<img src="./assets/screenshots/product-reviews.png" title="Home Page" width="100%">
+<img src="./assets/screenshots/books-with-search-results.png" title="Login Page" width="100%"> 
+</details>
 
 </div>
 <br/>

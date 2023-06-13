@@ -163,7 +163,7 @@ export const AskAiry = ({
                         backgroundColor: '#f2f2f2',
                         border: "none",
                         resize: "vertical",
-                        color: askAiryIsPending ? 'lightGray' : '#333333'
+                        color: askAiryIsPending ? 'darkgray' : '#333333'
                     }}
                     disabled={askAiryIsPending}
                     value={query}
