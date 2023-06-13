@@ -3,21 +3,19 @@ layout: default
 title: Ask Airy 
 ---
 
-[//]: # (<img src="./final-demo-gif.gif">)
+<img src="./demo.gif">
 
-Discover the power of AI with Ask Airy.
+---
+Discover the power of AI with Ask Airy, an Airtable extension enabling intelligent search and Q&A with your data.
+Ask Airy revolutionizes your Airtable search capabilities, enabling you to intuitively search for records using natural
+language.
 
-Ask Airy revolutionizes your Airtable search capabilities, enabling you to intuitively search for records using natural language.
+But Ask Airy is more than a search tool — it’s your data consultant. You can ask direct questions about your Airtable
+data, and Ask Airy will find and analyze the most relevant records for your question, and respond just as a human data
+analyst would!
 
-But Ask Airy is more than a search tool — it's your data consultant.
-You can ask direct questions about your Airtable data, and Ask Airy will provide insights that previously only a human
-could create.
-
-You can even filter the data you want to ask about by view or field.
-
-Ask Airy isn't limited to your Airtable data either. You can ask any question, from "How to use Airtable for inventory
-management?"
-to "Write me a blog post about how to use Airtable as a CRM solution".
+A [license](https://www.zoftware-solutions.com/l/ask-airy) and an Open AI API Key is required to use the extension.
+Free trial is included with license.
 
 [//]: # (Start your [free trial now]&#40;https://www.zoftware-solutions.com/l/ask-airy&#41;!)
 
