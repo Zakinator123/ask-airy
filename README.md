@@ -60,7 +60,7 @@ Takeaways/Lessons:
   the [OpenAIService.ts](https://github.com/Zakinator123/ask-airy/blob/main/src/services/OpenAIService.ts)
   An interesting problem was staying under the RPM/TPM rate limits for the OpenAI embeddings endpoint when bulk
   generating
-  embeddings for the database tables. My rate limiter approach can be found here.
+  embeddings for the database tables. My rate limiter approach can be found [here](https://github.com/Zakinator123/ask-airy/blob/159dc4e074cf99b5eb856d7c2d6aa01266ee23ee/src/utils/RequestAndTokenRateLimiter.ts).
 - I was able to stream the chat completion response to a React component using npm: openai-streams along with a custom
   [React hook](https://github.com/Zakinator123/ask-airy/blob/main/src/utils/UseReadableStream.ts) I wrote.
 - Given that this project employs context stuffing with gpt-3.5, staying under context window token limits was
