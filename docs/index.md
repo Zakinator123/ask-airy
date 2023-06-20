@@ -3,8 +3,9 @@ layout: default
 title: Ask Airy 
 ---
 
-<img src="./demo.gif">
-
+<p align="center">
+<img src="./compressed-demo-gif.gif">
+</p>
 ---
 Discover the power of AI with Ask Airy, an Airtable extension enabling intelligent search and Q&A with your data.
 Ask Airy revolutionizes your Airtable search capabilities, enabling you to intuitively search for records using natural
